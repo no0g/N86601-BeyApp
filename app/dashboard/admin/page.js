@@ -1,0 +1,201 @@
+import { createUserAction } from "@/app/actions/users";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { requireAdmin } from "@/lib/auth";
+import { comboLabel } from "@/lib/beyblade-data";
+import { prisma } from "@/lib/prisma";
+import { formatPercent } from "@/lib/utils";
+
+function buildComboRecords(matches) {
+  const records = new Map();
+
+  for (const match of matches) {
+    const comboId = match.yourCombo.id;
+
+    if (!records.has(comboId)) {
+      records.set(comboId, { combo: match.yourCombo, wins: 0, losses: 0, draws: 0, points: 0 });
+    }
+
+    if (match.winner === "YOUR") {
+      records.get(comboId).wins += 1;
+    } else if (match.winner === "OPPONENT") {
+      records.get(comboId).losses += 1;
+    } else {
+      records.get(comboId).draws += 1;
+    }
+
+    records.get(comboId).points += match.pointsDelta;
+  }
+
+  return [...records.values()]
+    .map((entry) => ({
+      ...entry,
+      total: entry.wins + entry.losses + entry.draws,
+      winRate:
+        entry.wins + entry.losses === 0 ? 0 : entry.wins / (entry.wins + entry.losses)
+    }))
+    .sort((a, b) => b.wins - a.wins || b.points - a.points || b.winRate - a.winRate)
+    .slice(0, 8);
+}
+
+export default async function AdminPage({ searchParams }) {
+  await requireAdmin();
+  const params = await searchParams;
+
+  const [users, counts, matches] = await Promise.all([
+    prisma.user.findMany({
+      include: {
+        _count: {
+          select: {
+            combos: true,
+            decks: true,
+            tournaments: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    }),
+    Promise.all([
+      prisma.user.count(),
+      prisma.combo.count(),
+      prisma.deck.count(),
+      prisma.tournament.count(),
+      prisma.match.count()
+    ]),
+    prisma.match.findMany({
+      include: {
+        yourCombo: true
+      }
+    })
+  ]);
+
+  const [userCount, comboCount, deckCount, tournamentCount, matchCount] = counts;
+  const topCombos = buildComboRecords(matches);
+
+  return (
+    <div className="space-y-6">
+      {params?.error ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {params.error}
+        </div>
+      ) : null}
+      {params?.success ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {params.success}
+        </div>
+      ) : null}
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        {[
+          ["Users", userCount],
+          ["Combos", comboCount],
+          ["Decks", deckCount],
+          ["Tournaments", tournamentCount],
+          ["Matches", matchCount]
+        ].map(([label, value]) => (
+          <Card key={label}>
+            <CardHeader>
+              <CardDescription>{label}</CardDescription>
+              <CardTitle className="text-3xl">{value}</CardTitle>
+            </CardHeader>
+          </Card>
+        ))}
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-[0.9fr,1.1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Create user</CardTitle>
+            <CardDescription>Players cannot self-register. Only the admin can create accounts.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={createUserAction} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Display name</Label>
+                <Input id="displayName" name="displayName" placeholder="Nugroho" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input id="username" name="username" placeholder="nugroho" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Initial password</Label>
+                <Input id="password" name="password" type="password" required />
+              </div>
+              <SubmitButton pendingLabel="Creating user...">Create user</SubmitButton>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top combos by match wins</CardTitle>
+            <CardDescription>Cross-user performance snapshot from all logged tournament matches.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topCombos.length ? (
+              topCombos.map((entry) => (
+                <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-medium">{entry.combo.name}</div>
+                      <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div className="font-semibold">{entry.wins} wins</div>
+                      <div className="text-muted-foreground">{entry.points} points</div>
+                      <div className="text-muted-foreground">{formatPercent(entry.winRate)} win rate</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No match history yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All users</CardTitle>
+          <CardDescription>Usage stats across every created account.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {users.length ? (
+            users.map((user) => (
+              <div key={user.id} className="grid gap-3 rounded-2xl border border-border p-4 md:grid-cols-[1.4fr,1fr]">
+                <div>
+                  <div className="font-semibold">{user.displayName}</div>
+                  <div className="text-sm text-muted-foreground">@{user.username}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-xl bg-muted p-2">
+                    <div className="text-muted-foreground">Combos</div>
+                    <div className="text-sm font-semibold">{user._count.combos}</div>
+                  </div>
+                  <div className="rounded-xl bg-muted p-2">
+                    <div className="text-muted-foreground">Decks</div>
+                    <div className="text-sm font-semibold">{user._count.decks}</div>
+                  </div>
+                  <div className="rounded-xl bg-muted p-2">
+                    <div className="text-muted-foreground">Tournaments</div>
+                    <div className="text-sm font-semibold">{user._count.tournaments}</div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              No users created yet.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
