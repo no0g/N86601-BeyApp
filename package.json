@@ -8,10 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "prisma:push:direct": "prisma db push --skip-generate"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
+    "@prisma/extension-accelerate": "^2.0.1",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "jose": "^5.9.6",

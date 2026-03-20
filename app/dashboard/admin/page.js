@@ -4,9 +4,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { requireAdmin } from "@/lib/auth";
-import { comboLabel } from "@/lib/beyblade-data";
+import { comboLabel, getPartById } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
-import { formatPercent } from "@/lib/utils";
+import { formatDate, formatPercent } from "@/lib/utils";
+
+const finishTypeLabels = {
+  XTREME: "Xtreme Finish",
+  BURST: "Burst Finish",
+  OVER: "Over Finish",
+  SPIN: "Spin Finish"
+};
+
+function opponentComboLabel(match) {
+  const blade = getPartById(match.opponentBladeId);
+  const ratchet = getPartById(match.opponentRatchetId);
+  const bit = getPartById(match.opponentBitId);
+  return `${blade?.altname || blade?.name || "?"} ${ratchet?.altname || ratchet?.name || "?"} ${bit?.altname || bit?.name || "?"}`;
+}
 
 function buildComboRecords(matches) {
   const records = new Map();
@@ -44,7 +58,7 @@ export default async function AdminPage({ searchParams }) {
   await requireAdmin();
   const params = await searchParams;
 
-  const [users, counts, matches] = await Promise.all([
+  const [users, counts, matches, combos, decks, tournaments] = await Promise.all([
     prisma.user.findMany({
       include: {
         _count: {
@@ -68,6 +82,51 @@ export default async function AdminPage({ searchParams }) {
       include: {
         yourCombo: true
       }
+    }),
+    prisma.combo.findMany({
+      include: {
+        owner: {
+          select: {
+            username: true,
+            displayName: true
+          }
+        }
+      },
+      orderBy: [{ createdAt: "desc" }]
+    }),
+    prisma.deck.findMany({
+      include: {
+        owner: {
+          select: {
+            username: true,
+            displayName: true
+          }
+        },
+        slots: {
+          orderBy: { slot: "asc" },
+          include: {
+            combo: true
+          }
+        }
+      },
+      orderBy: [{ createdAt: "desc" }]
+    }),
+    prisma.tournament.findMany({
+      include: {
+        owner: {
+          select: {
+            username: true,
+            displayName: true
+          }
+        },
+        matches: {
+          include: {
+            yourCombo: true
+          },
+          orderBy: { playedAt: "desc" }
+        }
+      },
+      orderBy: [{ createdAt: "desc" }]
     })
   ]);
 
@@ -192,6 +251,163 @@ export default async function AdminPage({ searchParams }) {
           ) : (
             <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
               No users created yet.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All combos</CardTitle>
+          <CardDescription>Read-only list of every combo created by all users.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 xl:grid-cols-2">
+          {combos.length ? (
+            combos.map((combo) => (
+              <div key={combo.id} className="rounded-2xl border border-border p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="font-semibold">{combo.name}</div>
+                    <div className="text-sm text-muted-foreground">{comboLabel(combo)}</div>
+                  </div>
+                  <div className="text-right text-sm text-muted-foreground">
+                    <div>{combo.owner.displayName}</div>
+                    <div>@{combo.owner.username}</div>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
+                  <div className="rounded-xl bg-rose-50 p-2">
+                    <div className="text-muted-foreground">ATK</div>
+                    <div className="text-sm font-semibold">{combo.attack}</div>
+                  </div>
+                  <div className="rounded-xl bg-sky-50 p-2">
+                    <div className="text-muted-foreground">DEF</div>
+                    <div className="text-sm font-semibold">{combo.defense}</div>
+                  </div>
+                  <div className="rounded-xl bg-emerald-50 p-2">
+                    <div className="text-muted-foreground">STA</div>
+                    <div className="text-sm font-semibold">{combo.stamina}</div>
+                  </div>
+                  <div className="rounded-xl bg-amber-50 p-2">
+                    <div className="text-muted-foreground">XTR</div>
+                    <div className="text-sm font-semibold">{combo.xtreme}</div>
+                  </div>
+                  <div className="rounded-xl bg-cyan-50 p-2">
+                    <div className="text-muted-foreground">BUR</div>
+                    <div className="text-sm font-semibold">{combo.burst}</div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              No combos created yet.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All decks</CardTitle>
+          <CardDescription>Read-only list of every saved deck across all users.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 xl:grid-cols-2">
+          {decks.length ? (
+            decks.map((deck) => (
+              <div key={deck.id} className="rounded-2xl border border-border p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="font-semibold">{deck.name}</div>
+                    <div className="text-sm text-muted-foreground">{deck.owner.displayName}</div>
+                  </div>
+                  <div className="text-right text-sm text-muted-foreground">
+                    <div>@{deck.owner.username}</div>
+                    <div>{formatDate(deck.createdAt)}</div>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {deck.slots.map((slot) => (
+                    <div key={slot.id} className="rounded-xl bg-muted/60 p-3">
+                      <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Slot {slot.slot}
+                      </div>
+                      <div className="font-medium">{slot.combo.name}</div>
+                      <div className="text-sm text-muted-foreground">{comboLabel(slot.combo)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              No decks created yet.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All tournaments and logs</CardTitle>
+          <CardDescription>Read-only list of tournaments with every logged match.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {tournaments.length ? (
+            tournaments.map((tournament) => (
+              <div key={tournament.id} className="rounded-2xl border border-border p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="font-semibold">{tournament.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {tournament.owner.displayName} (@{tournament.owner.username})
+                    </div>
+                  </div>
+                  <div className="text-right text-sm text-muted-foreground">
+                    <div>{tournament.matches.length} matches</div>
+                    <div>{formatDate(tournament.createdAt)}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {tournament.matches.length ? (
+                    tournament.matches.map((match) => (
+                      <div key={match.id} className="rounded-xl bg-muted/50 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-sm font-medium">
+                            {match.yourCombo.name} vs {match.opponentComboName}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{formatDate(match.playedAt)}</div>
+                        </div>
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          {comboLabel(match.yourCombo)} vs {opponentComboLabel(match)}
+                        </div>
+                        <div className="mt-2 text-sm">
+                          Result:{" "}
+                          <span className="font-semibold">
+                            {match.winner === "YOUR"
+                              ? `${match.yourCombo.name} won`
+                              : match.winner === "OPPONENT"
+                                ? `${match.opponentComboName} won`
+                                : "Draw"}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          {finishTypeLabels[match.finishType]} | Point delta: {match.pointsDelta > 0 ? `+${match.pointsDelta}` : match.pointsDelta}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                      No matches logged yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              No tournaments created yet.
             </div>
           )}
         </CardContent>
