@@ -157,7 +157,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-white/70 bg-white/75 p-8 shadow-xl shadow-slate-200/60 backdrop-blur">
+      <section className="rounded-[2rem] border border-white/70 bg-white/75 p-8 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:shadow-slate-950/40">
         <div className="flex flex-wrap items-center gap-3">
           <Badge>{session.role}</Badge>
           <h1 className="text-3xl font-semibold">Welcome, {session.displayName}</h1>
@@ -205,7 +205,7 @@ export default async function DashboardPage() {
                   <div className="text-sm text-muted-foreground">{formatDate(user.createdAt)}</div>
                 </div>
               ))}
-              <div className="flex flex-wrap gap-4 text-sm font-medium text-emerald-700">
+              <div className="flex flex-wrap gap-4 text-sm font-medium text-emerald-700 dark:text-emerald-300">
                 <Link href="/dashboard/admin">Open admin console</Link>
                 <Link href="/dashboard/training">Open training</Link>
                 <Link href="/dashboard/tournaments">Open tournaments</Link>
