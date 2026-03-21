@@ -33,13 +33,13 @@ export function PageLoading({
   }, [details]);
 
   return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-[2rem] border border-white/70 bg-white/75 px-6 py-12 text-center shadow-xl shadow-slate-200/60 backdrop-blur">
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-[2rem] border border-white/70 bg-white/75 px-6 py-12 text-center shadow-xl shadow-slate-200/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:shadow-slate-950/40">
       <div className="relative h-14 w-14">
         <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
         <div className="absolute inset-0 animate-spin rounded-full border-4 border-emerald-500 border-t-slate-900" />
       </div>
       <div className="space-y-1">
-        <div className="text-lg font-semibold text-slate-900">{title}</div>
+        <div className="text-lg font-semibold text-foreground">{title}</div>
         <div className="text-sm text-muted-foreground">{subtitle}</div>
         <div className="text-xs uppercase tracking-[0.24em] text-emerald-700">
           {details[detailIndex] || loadingLines[0]}

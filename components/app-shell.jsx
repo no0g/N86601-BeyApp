@@ -61,7 +61,7 @@ function ShellSidebar({ links, session, onNavigate }) {
             key={href}
             href={href}
             onClick={onNavigate}
-            className="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
+            className="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm text-foreground transition hover:bg-muted"
           >
             <Icon className="h-4 w-4" />
             <span>{label}</span>
@@ -93,7 +93,7 @@ export function AppShell({ session, children }) {
   return (
     <div className="app-shell min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_35%),linear-gradient(180deg,_#f8fafc,_#eef2ff)]">
       <div className="mx-auto max-w-7xl px-4 py-4 lg:hidden">
-        <div className="flex items-center justify-between rounded-3xl border border-white/70 bg-white/85 px-4 py-3 shadow-lg shadow-slate-200/50 backdrop-blur">
+        <div className="flex items-center justify-between rounded-3xl border border-white/70 bg-white/85 px-4 py-3 shadow-lg shadow-slate-200/50 backdrop-blur dark:border-white/10 dark:bg-slate-900/85 dark:shadow-slate-950/40">
           <Link href="/" className="flex items-center gap-3">
             <Image
               src="/logo.png"
@@ -111,7 +111,7 @@ export function AppShell({ session, children }) {
             type="button"
             aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className="inline-flex items-center justify-center rounded-2xl border border-border bg-white p-3 text-slate-900"
+            className="inline-flex items-center justify-center rounded-2xl border border-border bg-background p-3 text-foreground"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
