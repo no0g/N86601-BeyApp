@@ -15,23 +15,31 @@ function initialsForPart(part) {
     .toUpperCase();
 }
 
-export function PartMediaCard({ part, compact = false, mini = false, tiny = false, dark = false }) {
+export function PartMediaCard({
+  part,
+  compact = false,
+  mini = false,
+  tiny = false,
+  dark = false,
+  stretchTextOnly = false
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = part?.image ? `${BEYBREW_IMAGE_BASE_URL}/${part.image}` : null;
   const name = part?.altname || part?.name || "Unknown part";
+  const showImage = Boolean(imageSrc) && !imageFailed;
 
   return (
     <div
-      className={`h-fit rounded-2xl border ${tiny ? "p-1.5" : mini ? "p-2" : "p-2.5"} ${
+      className={`${stretchTextOnly ? "h-full" : "h-fit"} rounded-2xl border ${tiny ? "p-1.5" : mini ? "p-2" : "p-2.5"} ${
         dark ? "border-white/10 bg-white/5 text-white" : "border-border bg-muted/30 text-foreground"
       }`}
     >
-      <div
-        className={`relative overflow-hidden rounded-xl ${
-          tiny ? "aspect-[6/4]" : compact ? "aspect-[5/3]" : mini ? "aspect-[5/4]" : "aspect-[10/9]"
-        } bg-transparent`}
-      >
-        {imageSrc && !imageFailed ? (
+      {showImage ? (
+        <div
+          className={`relative overflow-hidden rounded-xl ${
+            tiny ? "aspect-[6/4]" : compact ? "aspect-[5/3]" : mini ? "aspect-[5/4]" : "aspect-[10/9]"
+          } bg-transparent`}
+        >
           <img
             src={imageSrc}
             alt={name}
@@ -40,22 +48,35 @@ export function PartMediaCard({ part, compact = false, mini = false, tiny = fals
             referrerPolicy="no-referrer"
             onError={() => setImageFailed(true)}
           />
-        ) : (
+        </div>
+      ) : null}
+      <div
+        className={`${
+          showImage
+            ? tiny
+              ? "mt-1"
+              : mini
+                ? "mt-1.5"
+                : "mt-2"
+            : stretchTextOnly
+              ? "flex h-full min-h-[170px] flex-col items-center justify-center text-center"
+              : "flex min-h-[84px] flex-col items-center justify-center text-center"
+        }`}
+      >
+        {!showImage && !stretchTextOnly ? (
           <div
-            className={`flex h-full w-full items-center justify-center text-lg font-semibold ${
-              dark ? "text-slate-200" : "text-muted-foreground"
+            className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full ${
+              dark ? "bg-white/10 text-slate-200" : "bg-background text-muted-foreground"
             }`}
           >
-            {initialsForPart(part)}
+            <span className="text-sm font-semibold">{initialsForPart(part)}</span>
           </div>
-        )}
-      </div>
-      <div className={tiny ? "mt-1" : mini ? "mt-1.5" : "mt-2"}>
+        ) : null}
         <div className={`${tiny ? "text-xs" : mini ? "text-sm" : "text-sm"} leading-tight font-semibold ${dark ? "text-white" : "text-foreground"}`}>
           {name}
         </div>
         <div className={`${tiny ? "text-[10px]" : "text-xs"} leading-tight ${dark ? "text-slate-300" : "text-muted-foreground"}`}>
-          {part?.source || "Part"}{part?.image && imageFailed ? " • image missing" : ""}
+          {part?.source || "Part"}
         </div>
       </div>
     </div>
