@@ -132,7 +132,7 @@ export default async function CombosPage({ searchParams }) {
               <CardTitle>Team combos</CardTitle>
               <CardDescription>Read-only view of combos created by other team members.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+            <CardContent className="space-y-4">
               {teamCombos.length ? (
                 teamCombos.map((combo) => (
                   <div key={combo.id} className="rounded-2xl border border-border p-4">
@@ -146,7 +146,7 @@ export default async function CombosPage({ searchParams }) {
                         <div>@{combo.owner.username}</div>
                       </div>
                     </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div className="mt-4">
                       <ComboPartsShowcase
                         blade={getPartById(combo.bladeId)}
                         ratchet={getPartById(combo.ratchetId)}
