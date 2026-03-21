@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { deleteComboAction, updateComboAction } from "@/app/actions/combos";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PartMediaCard } from "@/components/ui/part-media-card";
 import { Select } from "@/components/ui/select";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { beybladeData, comboLabel, computeComboStats, getPartById } from "@/lib/beyblade-data";
@@ -86,6 +87,12 @@ export function EditableComboCard({ combo }) {
           <div className="text-muted-foreground">BUR</div>
           <div className="text-sm font-semibold">{combo.burst}</div>
         </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {parts.map((part) => (
+          <PartMediaCard key={part.id} part={part} compact />
+        ))}
       </div>
 
       <details className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
@@ -172,12 +179,9 @@ export function EditableComboCard({ combo }) {
             </div>
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Parts</div>
-              <div className="mt-3 grid gap-3">
+              <div className="mt-3 grid gap-3 md:grid-cols-3">
                 {parts.map((part) => (
-                  <div key={part.id} className="flex items-center justify-between rounded-xl bg-white/5 px-3 py-2">
-                    <span>{part.altname || part.name}</span>
-                    <span className="text-xs text-slate-400">{part.source}</span>
-                  </div>
+                  <PartMediaCard key={part.id} part={part} compact dark />
                 ))}
               </div>
             </div>
