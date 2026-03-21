@@ -2,7 +2,7 @@ import { createComboAction, deleteComboAction, updateComboAction } from "@/app/a
 import { ComboBuilderForm } from "@/components/features/combo-builder-form";
 import { EditableComboCard } from "@/components/features/editable-combo-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PartMediaCard } from "@/components/ui/part-media-card";
+import { ComboPartsShowcase } from "@/components/ui/combo-parts-showcase";
 import { requireSession } from "@/lib/auth";
 import { comboLabel, getPartById } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
@@ -147,9 +147,11 @@ export default async function CombosPage({ searchParams }) {
                       </div>
                     </div>
                     <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      {[getPartById(combo.bladeId), getPartById(combo.ratchetId), getPartById(combo.bitId)].map((part) => (
-                        <PartMediaCard key={part.id} part={part} compact />
-                      ))}
+                      <ComboPartsShowcase
+                        blade={getPartById(combo.bladeId)}
+                        ratchet={getPartById(combo.ratchetId)}
+                        bit={getPartById(combo.bitId)}
+                      />
                     </div>
                     <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
                       <div className="rounded-xl bg-rose-50 p-2">

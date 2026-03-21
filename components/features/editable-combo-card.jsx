@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { deleteComboAction, updateComboAction } from "@/app/actions/combos";
+import { ComboPartsShowcase } from "@/components/ui/combo-parts-showcase";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PartMediaCard } from "@/components/ui/part-media-card";
 import { Select } from "@/components/ui/select";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { beybladeData, comboLabel, computeComboStats, getPartById } from "@/lib/beyblade-data";
@@ -89,10 +89,8 @@ export function EditableComboCard({ combo }) {
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
-        {parts.map((part) => (
-          <PartMediaCard key={part.id} part={part} compact />
-        ))}
+      <div className="mt-4">
+        <ComboPartsShowcase blade={parts[0]} ratchet={parts[1]} bit={parts[2]} />
       </div>
 
       <details className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
@@ -179,10 +177,8 @@ export function EditableComboCard({ combo }) {
             </div>
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
               <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Parts</div>
-              <div className="mt-3 grid gap-3 md:grid-cols-3">
-                {parts.map((part) => (
-                  <PartMediaCard key={part.id} part={part} compact dark />
-                ))}
+              <div className="mt-3">
+                <ComboPartsShowcase blade={parts[0]} ratchet={parts[1]} bit={parts[2]} dark />
               </div>
             </div>
             <div className="mt-5 space-y-4">
