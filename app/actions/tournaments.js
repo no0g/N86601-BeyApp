@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
-import { computeComboStats, getPartById } from "@/lib/beyblade-data";
+import { computeComboStats } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
 import { matchSchema, tournamentSchema } from "@/lib/validators";
 
@@ -13,13 +13,57 @@ const FINISH_POINTS = {
   SPIN: 1
 };
 
-export async function createTournamentAction(formData) {
-  const session = await requireSession();
+function getPointsDelta(winner, finishType) {
+  const finishPoints = FINISH_POINTS[finishType];
+  return winner === "YOUR" ? finishPoints : winner === "OPPONENT" ? -finishPoints : 0;
+}
 
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/tournaments?error=Hardcoded%20admin%20account%20cannot%20own%20tournaments");
+async function findOwnedTournament(tx, session, tournamentId) {
+  return tx.tournament.findFirst({
+    where: {
+      id: tournamentId,
+      ownerId: session.sub
+    }
+  });
+}
+
+async function findSelectableCombo(tx, session, comboId) {
+  return tx.combo.findFirst({
+    where: session.role === "ADMIN" ? { id: comboId } : { id: comboId, ownerId: session.sub }
+  });
+}
+
+async function validateTournamentMatch(tx, session, data, matchId) {
+  try {
+    computeComboStats(data.opponentBladeId, data.opponentRatchetId, data.opponentBitId);
+  } catch {
+    return "Opponent combo selection is invalid";
   }
 
+  const [tournament, yourCombo, existingMatch] = await Promise.all([
+    findOwnedTournament(tx, session, data.tournamentId),
+    findSelectableCombo(tx, session, data.yourComboId),
+    matchId
+      ? tx.match.findFirst({
+          where: {
+            id: matchId,
+            tournament: {
+              ownerId: session.sub
+            }
+          }
+        })
+      : Promise.resolve(true)
+  ]);
+
+  if (!tournament || !yourCombo || !existingMatch) {
+    return "Tournament or your combo selection is invalid";
+  }
+
+  return null;
+}
+
+export async function createTournamentAction(formData) {
+  const session = await requireSession();
   const parsed = tournamentSchema.safeParse({
     name: formData.get("name")
   });
@@ -28,34 +72,37 @@ export async function createTournamentAction(formData) {
     redirect("/dashboard/tournaments?error=Invalid%20tournament%20name");
   }
 
-  const existing = await prisma.tournament.findFirst({
-    where: {
-      ownerId: session.sub,
-      name: parsed.data.name
+  const error = await prisma.$transaction(async (tx) => {
+    const existing = await tx.tournament.findFirst({
+      where: {
+        ownerId: session.sub,
+        name: parsed.data.name
+      }
+    });
+
+    if (existing) {
+      return "You already have a tournament with that name";
     }
+
+    await tx.tournament.create({
+      data: {
+        name: parsed.data.name,
+        ownerId: session.sub
+      }
+    });
+
+    return null;
   });
 
-  if (existing) {
-    redirect("/dashboard/tournaments?error=You%20already%20have%20a%20tournament%20with%20that%20name");
+  if (error) {
+    redirect(`/dashboard/tournaments?error=${encodeURIComponent(error)}`);
   }
-
-  await prisma.tournament.create({
-    data: {
-      name: parsed.data.name,
-      ownerId: session.sub
-    }
-  });
 
   redirect("/dashboard/tournaments?success=Tournament%20created");
 }
 
 export async function updateTournamentAction(formData) {
   const session = await requireSession();
-
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/tournaments?error=Hardcoded%20admin%20account%20cannot%20own%20tournaments");
-  }
-
   const tournamentId = String(formData.get("tournamentId") || "");
   const parsed = tournamentSchema.safeParse({
     name: formData.get("name")
@@ -65,75 +112,71 @@ export async function updateTournamentAction(formData) {
     redirect("/dashboard/tournaments?error=Invalid%20tournament%20name");
   }
 
-  const tournament = await prisma.tournament.findFirst({
-    where: {
-      id: tournamentId,
-      ownerId: session.sub
+  const error = await prisma.$transaction(async (tx) => {
+    const tournament = await findOwnedTournament(tx, session, tournamentId);
+
+    if (!tournament) {
+      return "Tournament not found";
     }
-  });
 
-  if (!tournament) {
-    redirect("/dashboard/tournaments?error=Tournament%20not%20found");
-  }
+    const existing = await tx.tournament.findFirst({
+      where: {
+        ownerId: session.sub,
+        name: parsed.data.name,
+        id: { not: tournamentId }
+      }
+    });
 
-  const existing = await prisma.tournament.findFirst({
-    where: {
-      ownerId: session.sub,
-      name: parsed.data.name,
-      id: { not: tournamentId }
+    if (existing) {
+      return "You already have a tournament with that name";
     }
+
+    await tx.tournament.update({
+      where: { id: tournamentId },
+      data: { name: parsed.data.name }
+    });
+
+    return null;
   });
 
-  if (existing) {
-    redirect("/dashboard/tournaments?error=You%20already%20have%20a%20tournament%20with%20that%20name");
+  if (error) {
+    redirect(`/dashboard/tournaments?error=${encodeURIComponent(error)}`);
   }
-
-  await prisma.tournament.update({
-    where: { id: tournamentId },
-    data: { name: parsed.data.name }
-  });
 
   redirect("/dashboard/tournaments?success=Tournament%20updated");
 }
 
 export async function deleteTournamentAction(formData) {
   const session = await requireSession();
-
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/tournaments?error=Hardcoded%20admin%20account%20cannot%20own%20tournaments");
-  }
-
   const tournamentId = String(formData.get("tournamentId") || "");
 
   if (!tournamentId) {
     redirect("/dashboard/tournaments?error=Tournament%20not%20found");
   }
 
-  const tournament = await prisma.tournament.findFirst({
-    where: {
-      id: tournamentId,
-      ownerId: session.sub
+  const error = await prisma.$transaction(async (tx) => {
+    const tournament = await findOwnedTournament(tx, session, tournamentId);
+
+    if (!tournament) {
+      return "Tournament not found";
     }
+
+    await tx.tournament.delete({
+      where: { id: tournamentId }
+    });
+
+    return null;
   });
 
-  if (!tournament) {
-    redirect("/dashboard/tournaments?error=Tournament%20not%20found");
+  if (error) {
+    redirect(`/dashboard/tournaments?error=${encodeURIComponent(error)}`);
   }
-
-  await prisma.tournament.delete({
-    where: { id: tournamentId }
-  });
 
   redirect("/dashboard/tournaments?success=Tournament%20deleted");
 }
 
 export async function createMatchAction(formData) {
   const session = await requireSession();
-
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/tournaments?error=Hardcoded%20admin%20account%20cannot%20log%20matches");
-  }
-
   const parsed = matchSchema.safeParse({
     tournamentId: formData.get("tournamentId"),
     yourComboId: formData.get("yourComboId"),
@@ -149,45 +192,103 @@ export async function createMatchAction(formData) {
     redirect("/dashboard/tournaments?error=Invalid%20match%20details");
   }
 
-  try {
-    computeComboStats(
-      parsed.data.opponentBladeId,
-      parsed.data.opponentRatchetId,
-      parsed.data.opponentBitId
-    );
-  } catch {
-    redirect("/dashboard/tournaments?error=Opponent%20combo%20selection%20is%20invalid");
-  }
-
-  const [tournament, yourCombo] = await Promise.all([
-    prisma.tournament.findFirst({
-      where: {
-        id: parsed.data.tournamentId,
-        ownerId: session.sub
-      }
-    }),
-    prisma.combo.findFirst({
-      where: {
-        ownerId: session.sub,
-        id: parsed.data.yourComboId
-      }
-    })
-  ]);
-
-  if (!tournament || !yourCombo) {
-    redirect("/dashboard/tournaments?error=Tournament%20or%20your%20combo%20selection%20is%20invalid");
-  }
-
-  const finishPoints = FINISH_POINTS[parsed.data.finishType];
-  const pointsDelta =
-    parsed.data.winner === "YOUR" ? finishPoints : parsed.data.winner === "OPPONENT" ? -finishPoints : 0;
-
-  await prisma.match.create({
-    data: {
-      ...parsed.data,
-      pointsDelta
+  const error = await prisma.$transaction(async (tx) => {
+    const validationError = await validateTournamentMatch(tx, session, parsed.data);
+    if (validationError) {
+      return validationError;
     }
+
+    await tx.match.create({
+      data: {
+        ...parsed.data,
+        pointsDelta: getPointsDelta(parsed.data.winner, parsed.data.finishType)
+      }
+    });
+
+    return null;
   });
 
+  if (error) {
+    redirect(`/dashboard/tournaments?error=${encodeURIComponent(error)}`);
+  }
+
   redirect("/dashboard/tournaments?success=Match%20saved");
+}
+
+export async function updateMatchAction(formData) {
+  const session = await requireSession();
+  const matchId = String(formData.get("matchId") || "");
+  const parsed = matchSchema.safeParse({
+    tournamentId: formData.get("tournamentId"),
+    yourComboId: formData.get("yourComboId"),
+    opponentComboName: formData.get("opponentComboName"),
+    opponentBladeId: formData.get("opponentBladeId"),
+    opponentRatchetId: formData.get("opponentRatchetId"),
+    opponentBitId: formData.get("opponentBitId"),
+    winner: formData.get("winner"),
+    finishType: formData.get("finishType")
+  });
+
+  if (!matchId || !parsed.success) {
+    redirect("/dashboard/tournaments?error=Invalid%20match%20details");
+  }
+
+  const error = await prisma.$transaction(async (tx) => {
+    const validationError = await validateTournamentMatch(tx, session, parsed.data, matchId);
+    if (validationError) {
+      return validationError;
+    }
+
+    await tx.match.update({
+      where: { id: matchId },
+      data: {
+        ...parsed.data,
+        pointsDelta: getPointsDelta(parsed.data.winner, parsed.data.finishType)
+      }
+    });
+
+    return null;
+  });
+
+  if (error) {
+    redirect(`/dashboard/tournaments?error=${encodeURIComponent(error)}`);
+  }
+
+  redirect("/dashboard/tournaments?success=Match%20updated");
+}
+
+export async function deleteMatchAction(formData) {
+  const session = await requireSession();
+  const matchId = String(formData.get("matchId") || "");
+
+  if (!matchId) {
+    redirect("/dashboard/tournaments?error=Match%20not%20found");
+  }
+
+  const error = await prisma.$transaction(async (tx) => {
+    const match = await tx.match.findFirst({
+      where: {
+        id: matchId,
+        tournament: {
+          ownerId: session.sub
+        }
+      }
+    });
+
+    if (!match) {
+      return "Match not found";
+    }
+
+    await tx.match.delete({
+      where: { id: matchId }
+    });
+
+    return null;
+  });
+
+  if (error) {
+    redirect(`/dashboard/tournaments?error=${encodeURIComponent(error)}`);
+  }
+
+  redirect("/dashboard/tournaments?success=Match%20deleted");
 }

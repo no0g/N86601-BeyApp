@@ -12,7 +12,7 @@ const FINISH_POINTS = {
   SPIN: 1
 };
 
-async function validateTrainingMatch(tx, sessionUserId, data, ignoreMatchId) {
+async function validateTrainingMatch(tx, session, data, ignoreMatchId) {
   if (data.yourComboId === data.opponentComboId) {
     return "Select two different combos for training";
   }
@@ -21,14 +21,11 @@ async function validateTrainingMatch(tx, sessionUserId, data, ignoreMatchId) {
     tx.trainingSession.findFirst({
       where: {
         id: data.trainingSessionId,
-        ownerId: sessionUserId
+        ownerId: session.sub
       }
     }),
     tx.combo.findFirst({
-      where: {
-        id: data.yourComboId,
-        ownerId: sessionUserId
-      }
+      where: session.role === "ADMIN" ? { id: data.yourComboId } : { id: data.yourComboId, ownerId: session.sub }
     }),
     tx.combo.findFirst({
       where: {
@@ -40,7 +37,7 @@ async function validateTrainingMatch(tx, sessionUserId, data, ignoreMatchId) {
           where: {
             id: ignoreMatchId,
             trainingSession: {
-              ownerId: sessionUserId
+              ownerId: session.sub
             }
           }
         })
@@ -56,10 +53,6 @@ async function validateTrainingMatch(tx, sessionUserId, data, ignoreMatchId) {
 
 export async function createTrainingSessionAction(formData) {
   const session = await requireSession();
-
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/training?error=Hardcoded%20admin%20account%20cannot%20own%20training%20sessions");
-  }
 
   const parsed = trainingSessionSchema.safeParse({
     name: formData.get("name")
@@ -101,10 +94,6 @@ export async function createTrainingSessionAction(formData) {
 export async function createTrainingMatchAction(formData) {
   const session = await requireSession();
 
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/training?error=Hardcoded%20admin%20account%20cannot%20log%20training%20matches");
-  }
-
   const parsed = trainingMatchSchema.safeParse({
     trainingSessionId: formData.get("trainingSessionId"),
     yourComboId: formData.get("yourComboId"),
@@ -118,7 +107,7 @@ export async function createTrainingMatchAction(formData) {
   }
 
   const error = await prisma.$transaction(async (tx) => {
-    const validationError = await validateTrainingMatch(tx, session.sub, parsed.data);
+    const validationError = await validateTrainingMatch(tx, session, parsed.data);
     if (validationError) {
       return validationError;
     }
@@ -146,10 +135,6 @@ export async function createTrainingMatchAction(formData) {
 
 export async function updateTrainingSessionAction(formData) {
   const session = await requireSession();
-
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/training?error=Hardcoded%20admin%20account%20cannot%20own%20training%20sessions");
-  }
 
   const trainingSessionId = String(formData.get("trainingSessionId") || "");
   const parsed = trainingSessionSchema.safeParse({
@@ -202,10 +187,6 @@ export async function updateTrainingSessionAction(formData) {
 export async function deleteTrainingSessionAction(formData) {
   const session = await requireSession();
 
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/training?error=Hardcoded%20admin%20account%20cannot%20own%20training%20sessions");
-  }
-
   const trainingSessionId = String(formData.get("trainingSessionId") || "");
 
   if (!trainingSessionId) {
@@ -241,10 +222,6 @@ export async function deleteTrainingSessionAction(formData) {
 export async function updateTrainingMatchAction(formData) {
   const session = await requireSession();
 
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/training?error=Hardcoded%20admin%20account%20cannot%20log%20training%20matches");
-  }
-
   const trainingMatchId = String(formData.get("trainingMatchId") || "");
   const parsed = trainingMatchSchema.safeParse({
     trainingSessionId: formData.get("trainingSessionId"),
@@ -259,7 +236,7 @@ export async function updateTrainingMatchAction(formData) {
   }
 
   const error = await prisma.$transaction(async (tx) => {
-    const validationError = await validateTrainingMatch(tx, session.sub, parsed.data, trainingMatchId);
+    const validationError = await validateTrainingMatch(tx, session, parsed.data, trainingMatchId);
     if (validationError) {
       return validationError;
     }
@@ -288,10 +265,6 @@ export async function updateTrainingMatchAction(formData) {
 
 export async function deleteTrainingMatchAction(formData) {
   const session = await requireSession();
-
-  if (session.role === "ADMIN") {
-    redirect("/dashboard/training?error=Hardcoded%20admin%20account%20cannot%20log%20training%20matches");
-  }
 
   const trainingMatchId = String(formData.get("trainingMatchId") || "");
 

@@ -1,7 +1,9 @@
 import {
   createMatchAction,
   createTournamentAction,
+  deleteMatchAction,
   deleteTournamentAction,
+  updateMatchAction,
   updateTournamentAction
 } from "@/app/actions/tournaments";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +32,14 @@ function opponentComboLabel(match) {
   return `${blade?.altname || blade?.name || "?"} ${ratchet?.altname || ratchet?.name || "?"} ${bit?.altname || bit?.name || "?"}`;
 }
 
+function comboOptionLabel(combo, showOwner) {
+  if (!showOwner) {
+    return combo.name;
+  }
+
+  return `${combo.name} - ${combo.owner.displayName}`;
+}
+
 export default async function TournamentsPage({ searchParams }) {
   if (isBuildPhase) {
     return null;
@@ -37,29 +47,36 @@ export default async function TournamentsPage({ searchParams }) {
 
   const session = await requireSession();
   const params = await searchParams;
-
-  if (session.role === "ADMIN") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Tournaments</CardTitle>
-          <CardDescription>The hardcoded admin account is reserved for reporting only.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  const showOwner = session.role === "ADMIN";
 
   const [combos, tournaments] = await Promise.all([
     prisma.combo.findMany({
-      where: { ownerId: session.sub },
-      orderBy: { createdAt: "desc" }
+      where: showOwner ? undefined : { ownerId: session.sub },
+      include: {
+        owner: {
+          select: {
+            username: true,
+            displayName: true
+          }
+        }
+      },
+      orderBy: showOwner ? [{ owner: { displayName: "asc" } }, { createdAt: "desc" }] : { createdAt: "desc" }
     }),
     prisma.tournament.findMany({
       where: { ownerId: session.sub },
       include: {
         matches: {
           include: {
-            yourCombo: true
+            yourCombo: {
+              include: {
+                owner: {
+                  select: {
+                    username: true,
+                    displayName: true
+                  }
+                }
+              }
+            }
           },
           orderBy: { playedAt: "desc" }
         }
@@ -101,7 +118,11 @@ export default async function TournamentsPage({ searchParams }) {
         <Card>
           <CardHeader>
             <CardTitle>Log match</CardTitle>
-            <CardDescription>Track combo vs combo and record the result.</CardDescription>
+            <CardDescription>
+              {showOwner
+                ? "Admin can log tournaments using any saved team combo as your side."
+                : "Track combo vs combo and record the result."}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {combos.length === 0 || tournaments.length === 0 ? (
@@ -128,7 +149,7 @@ export default async function TournamentsPage({ searchParams }) {
                     <option value="">Select combo</option>
                     {combos.map((combo) => (
                       <option key={combo.id} value={combo.id}>
-                        {combo.name}
+                        {comboOptionLabel(combo, showOwner)}
                       </option>
                     ))}
                   </Select>
@@ -261,6 +282,11 @@ export default async function TournamentsPage({ searchParams }) {
                         <div className="mt-2 text-sm text-muted-foreground">
                           {comboLabel(match.yourCombo)} vs {opponentComboLabel(match)}
                         </div>
+                        {showOwner && match.yourCombo.owner ? (
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            Team combo owner: {match.yourCombo.owner.displayName} (@{match.yourCombo.owner.username})
+                          </div>
+                        ) : null}
                         <div className="mt-2 text-sm">
                           Result:{" "}
                           <span className="font-semibold">
@@ -272,8 +298,133 @@ export default async function TournamentsPage({ searchParams }) {
                           </span>
                         </div>
                         <div className="mt-1 text-sm text-muted-foreground">
-                          {finishTypeLabels[match.finishType]} | Point delta: {match.pointsDelta > 0 ? `+${match.pointsDelta}` : match.pointsDelta}
+                          {finishTypeLabels[match.finishType]} | Point delta:{" "}
+                          {match.pointsDelta > 0 ? `+${match.pointsDelta}` : match.pointsDelta}
                         </div>
+                        <details className="mt-4 rounded-xl border border-border bg-white/60 p-3">
+                          <summary className="cursor-pointer text-sm font-medium">Edit or delete log</summary>
+                          <form action={updateMatchAction} className="mt-4 grid gap-4 md:grid-cols-2">
+                            <input type="hidden" name="matchId" value={match.id} />
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor={`tournament-${match.id}`}>Tournament</Label>
+                              <Select
+                                id={`tournament-${match.id}`}
+                                name="tournamentId"
+                                defaultValue={tournament.id}
+                                required
+                              >
+                                {tournaments.map((tournamentItem) => (
+                                  <option key={tournamentItem.id} value={tournamentItem.id}>
+                                    {tournamentItem.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`your-combo-${match.id}`}>Your combo</Label>
+                              <Select
+                                id={`your-combo-${match.id}`}
+                                name="yourComboId"
+                                defaultValue={match.yourComboId}
+                                required
+                              >
+                                {combos.map((combo) => (
+                                  <option key={combo.id} value={combo.id}>
+                                    {comboOptionLabel(combo, showOwner)}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`opponent-name-${match.id}`}>Opponent combo name</Label>
+                              <Input
+                                id={`opponent-name-${match.id}`}
+                                name="opponentComboName"
+                                defaultValue={match.opponentComboName}
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`opponent-blade-${match.id}`}>Opponent blade</Label>
+                              <Select
+                                id={`opponent-blade-${match.id}`}
+                                name="opponentBladeId"
+                                defaultValue={match.opponentBladeId}
+                                required
+                              >
+                                {beybladeData.blades.map((part) => (
+                                  <option key={part.id} value={part.id}>
+                                    {part.altname || part.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`opponent-ratchet-${match.id}`}>Opponent ratchet</Label>
+                              <Select
+                                id={`opponent-ratchet-${match.id}`}
+                                name="opponentRatchetId"
+                                defaultValue={match.opponentRatchetId}
+                                required
+                              >
+                                {beybladeData.ratchets.map((part) => (
+                                  <option key={part.id} value={part.id}>
+                                    {part.altname || part.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`opponent-bit-${match.id}`}>Opponent bit</Label>
+                              <Select
+                                id={`opponent-bit-${match.id}`}
+                                name="opponentBitId"
+                                defaultValue={match.opponentBitId}
+                                required
+                              >
+                                {beybladeData.bits.map((part) => (
+                                  <option key={part.id} value={part.id}>
+                                    {part.altname || part.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`winner-${match.id}`}>Result</Label>
+                              <Select id={`winner-${match.id}`} name="winner" defaultValue={match.winner} required>
+                                <option value="YOUR">Your combo won</option>
+                                <option value="OPPONENT">Opponent combo won</option>
+                                <option value="DRAW">Draw</option>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`finish-${match.id}`}>Finish type</Label>
+                              <Select
+                                id={`finish-${match.id}`}
+                                name="finishType"
+                                defaultValue={match.finishType}
+                                required
+                              >
+                                <option value="XTREME">Xtreme Finish (+/- 3)</option>
+                                <option value="BURST">Burst Finish (+/- 2)</option>
+                                <option value="OVER">Over Finish (+/- 2)</option>
+                                <option value="SPIN">Spin Finish (+/- 1)</option>
+                              </Select>
+                            </div>
+                            <div className="flex flex-wrap gap-3 md:col-span-2">
+                              <SubmitButton pendingLabel="Updating log...">Save changes</SubmitButton>
+                              <button
+                                type="submit"
+                                formAction={deleteMatchAction}
+                                name="matchId"
+                                value={match.id}
+                                className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
+                              >
+                                Delete log
+                              </button>
+                            </div>
+                          </form>
+                        </details>
                       </div>
                     ))
                   ) : (

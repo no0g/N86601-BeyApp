@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
+  ADMIN_USERNAME,
   authenticateUser,
   createSession,
   destroySession,
@@ -44,7 +45,7 @@ export async function logoutAction() {
 export async function changePasswordAction(formData) {
   const session = await requireSession();
 
-  if (session.role === "ADMIN" && session.sub === "hardcoded-admin") {
+  if (session.role === "ADMIN" && session.username === ADMIN_USERNAME) {
     redirect("/dashboard/settings?error=Hardcoded%20admin%20password%20must%20be%20changed%20in%20environment%20variables");
   }
 

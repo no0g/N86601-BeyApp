@@ -25,6 +25,14 @@ const finishTypeLabels = {
   SPIN: "Spin Finish"
 };
 
+function comboOptionLabel(combo, showOwner) {
+  if (!showOwner) {
+    return combo.name;
+  }
+
+  return `${combo.name} - ${combo.owner.displayName}`;
+}
+
 export default async function TrainingPage({ searchParams }) {
   if (isBuildPhase) {
     return null;
@@ -32,23 +40,23 @@ export default async function TrainingPage({ searchParams }) {
 
   const session = await requireSession();
   const params = await searchParams;
+  const showOwner = session.role === "ADMIN";
 
-  if (session.role === "ADMIN") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Training</CardTitle>
-          <CardDescription>The hardcoded admin account is reserved for reporting only.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
+  const comboQuery = {
+    where: showOwner ? undefined : { ownerId: session.sub },
+    include: {
+      owner: {
+        select: {
+          username: true,
+          displayName: true
+        }
+      }
+    },
+    orderBy: showOwner ? [{ owner: { displayName: "asc" } }, { createdAt: "desc" }] : { createdAt: "desc" }
+  };
 
   const [yourCombos, allCombos, trainingSessions] = await Promise.all([
-    prisma.combo.findMany({
-      where: { ownerId: session.sub },
-      orderBy: { createdAt: "desc" }
-    }),
+    prisma.combo.findMany(comboQuery),
     prisma.combo.findMany({
       include: {
         owner: {
@@ -126,7 +134,11 @@ export default async function TrainingPage({ searchParams }) {
         <Card>
           <CardHeader>
             <CardTitle>Log training match</CardTitle>
-            <CardDescription>Pick your combo and an opponent combo from the team list.</CardDescription>
+            <CardDescription>
+              {showOwner
+                ? "Admin can create internal sessions using any saved team combo on your side."
+                : "Pick your combo and an opponent combo from the team list."}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {yourCombos.length === 0 || allCombos.length < 2 || trainingSessions.length === 0 ? (
@@ -152,7 +164,7 @@ export default async function TrainingPage({ searchParams }) {
                     <option value="">Select your combo</option>
                     {yourCombos.map((combo) => (
                       <option key={combo.id} value={combo.id}>
-                        {combo.name}
+                        {comboOptionLabel(combo, showOwner)}
                       </option>
                     ))}
                   </Select>
@@ -252,6 +264,9 @@ export default async function TrainingPage({ searchParams }) {
                           {comboLabel(match.yourCombo)} vs {comboLabel(match.opponentCombo)}
                         </div>
                         <div className="mt-1 text-sm text-muted-foreground">
+                          Your combo owner: {match.yourCombo.owner.displayName} (@{match.yourCombo.owner.username})
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
                           Opponent owner: {match.opponentCombo.owner.displayName} (@{match.opponentCombo.owner.username})
                         </div>
                         <div className="mt-2 text-sm">
@@ -265,7 +280,8 @@ export default async function TrainingPage({ searchParams }) {
                           </span>
                         </div>
                         <div className="mt-1 text-sm text-muted-foreground">
-                          {finishTypeLabels[match.finishType]} | Point delta: {match.pointsDelta > 0 ? `+${match.pointsDelta}` : match.pointsDelta}
+                          {finishTypeLabels[match.finishType]} | Point delta:{" "}
+                          {match.pointsDelta > 0 ? `+${match.pointsDelta}` : match.pointsDelta}
                         </div>
                         <details className="mt-4 rounded-xl border border-border bg-white/60 p-3">
                           <summary className="cursor-pointer text-sm font-medium">Edit or delete log</summary>
@@ -296,7 +312,7 @@ export default async function TrainingPage({ searchParams }) {
                               >
                                 {yourCombos.map((combo) => (
                                   <option key={combo.id} value={combo.id}>
-                                    {combo.name}
+                                    {comboOptionLabel(combo, showOwner)}
                                   </option>
                                 ))}
                               </Select>
