@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Trophy, ShieldCheck, Swords, Users, LayoutDashboard, LogOut, KeyRound } from "lucide-react";
+import { Trophy, ShieldCheck, Swords, Users, LayoutDashboard, LogOut, KeyRound, Dumbbell } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Badge } from "@/components/ui/badge";
 
@@ -8,6 +8,7 @@ const baseLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/combos", label: "Combo Builder", icon: Swords },
   { href: "/dashboard/decks", label: "Decks", icon: ShieldCheck },
+  { href: "/dashboard/training", label: "Training", icon: Dumbbell },
   { href: "/dashboard/tournaments", label: "Tournaments", icon: Trophy },
   { href: "/dashboard/settings", label: "Settings", icon: KeyRound }
 ];
@@ -15,7 +16,7 @@ const baseLinks = [
 export function AppShell({ session, children }) {
   const links =
     session.role === "ADMIN"
-      ? [...baseLinks.filter((item) => item.href !== "/dashboard/decks" && item.href !== "/dashboard/tournaments" && item.href !== "/dashboard/combos"), { href: "/dashboard/admin", label: "Admin", icon: Users }]
+      ? [...baseLinks.filter((item) => item.href !== "/dashboard/decks" && item.href !== "/dashboard/tournaments" && item.href !== "/dashboard/combos" && item.href !== "/dashboard/training"), { href: "/dashboard/admin", label: "Admin", icon: Users }]
       : baseLinks;
 
   return (

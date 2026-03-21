@@ -6,7 +6,9 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { comboLabel, getPartById } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatPercent } from "@/lib/utils";
+import { formatDate, formatPercent, isBuildPhase } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 const finishTypeLabels = {
   XTREME: "Xtreme Finish",
@@ -55,6 +57,10 @@ function buildComboRecords(matches) {
 }
 
 export default async function AdminPage({ searchParams }) {
+  if (isBuildPhase) {
+    return null;
+  }
+
   await requireAdmin();
   const params = await searchParams;
 

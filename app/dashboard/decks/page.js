@@ -7,8 +7,15 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { requireSession } from "@/lib/auth";
 import { comboLabel } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
+import { isBuildPhase } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 export default async function DecksPage({ searchParams }) {
+  if (isBuildPhase) {
+    return null;
+  }
+
   const session = await requireSession();
   const params = await searchParams;
 

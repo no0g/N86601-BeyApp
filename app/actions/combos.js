@@ -78,7 +78,9 @@ export async function updateComboAction(formData) {
     },
     include: {
       deckSlots: true,
-      yourMatches: true
+      yourMatches: true,
+      trainingYourMatches: true,
+      trainingOpponentMatches: true
     }
   });
 
@@ -105,7 +107,12 @@ export async function updateComboAction(formData) {
 
   if (
     partChanged &&
-    (combo.deckSlots.length > 0 || combo.yourMatches.length > 0)
+    (
+      combo.deckSlots.length > 0 ||
+      combo.yourMatches.length > 0 ||
+      combo.trainingYourMatches.length > 0 ||
+      combo.trainingOpponentMatches.length > 0
+    )
   ) {
     redirect("/dashboard/combos?error=This%20combo%20is%20already%20used%20in%20a%20deck%20or%20match.%20Only%20the%20name%20can%20be%20edited");
   }
@@ -147,7 +154,9 @@ export async function deleteComboAction(formData) {
     },
     include: {
       deckSlots: true,
-      yourMatches: true
+      yourMatches: true,
+      trainingYourMatches: true,
+      trainingOpponentMatches: true
     }
   });
 
@@ -155,7 +164,12 @@ export async function deleteComboAction(formData) {
     redirect("/dashboard/combos?error=Combo%20not%20found");
   }
 
-  if (combo.deckSlots.length > 0 || combo.yourMatches.length > 0) {
+  if (
+    combo.deckSlots.length > 0 ||
+    combo.yourMatches.length > 0 ||
+    combo.trainingYourMatches.length > 0 ||
+    combo.trainingOpponentMatches.length > 0
+  ) {
     redirect("/dashboard/combos?error=Cannot%20delete%20a%20combo%20that%20is%20already%20used%20in%20a%20deck%20or%20match");
   }
 

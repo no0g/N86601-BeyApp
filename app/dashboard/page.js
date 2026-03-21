@@ -4,16 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { comboLabel } from "@/lib/beyblade-data";
-import { formatDate } from "@/lib/utils";
+import { formatDate, isBuildPhase } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 async function getUserOverview(session) {
   if (session.role === "ADMIN") {
-    const [users, combos, decks, tournaments, matches] = await Promise.all([
+    const [users, combos, decks, trainingSessions, tournaments, matches, trainingMatches] = await Promise.all([
       prisma.user.count(),
       prisma.combo.count(),
       prisma.deck.count(),
+      prisma.trainingSession.count(),
       prisma.tournament.count(),
-      prisma.match.count()
+      prisma.match.count(),
+      prisma.trainingMatch.count()
     ]);
 
     const latestUsers = await prisma.user.findMany({
@@ -21,12 +25,13 @@ async function getUserOverview(session) {
       take: 6
     });
 
-    return { users, combos, decks, tournaments, matches, latestUsers };
+    return { users, combos, decks, trainingSessions, tournaments, matches, trainingMatches, latestUsers };
   }
 
-  const [comboCount, deckCount, tournamentCount, matchCount, latestCombos] = await Promise.all([
+  const [comboCount, deckCount, trainingCount, tournamentCount, matchCount, latestCombos] = await Promise.all([
     prisma.combo.count({ where: { ownerId: session.sub } }),
     prisma.deck.count({ where: { ownerId: session.sub } }),
+    prisma.trainingSession.count({ where: { ownerId: session.sub } }),
     prisma.tournament.count({ where: { ownerId: session.sub } }),
     prisma.match.count({
       where: {
@@ -40,10 +45,14 @@ async function getUserOverview(session) {
     })
   ]);
 
-  return { comboCount, deckCount, tournamentCount, matchCount, latestCombos };
+  return { comboCount, deckCount, trainingCount, tournamentCount, matchCount, latestCombos };
 }
 
 export default async function DashboardPage() {
+  if (isBuildPhase) {
+    return null;
+  }
+
   const session = await requireSession();
   const data = await getUserOverview(session);
 
@@ -68,8 +77,10 @@ export default async function DashboardPage() {
               ["Users", data.users],
               ["Combos", data.combos],
               ["Decks", data.decks],
+              ["Training", data.trainingSessions],
               ["Tournaments", data.tournaments],
-              ["Matches", data.matches]
+              ["Tournament matches", data.matches],
+              ["Training matches", data.trainingMatches]
             ].map(([label, value]) => (
               <Card key={label}>
                 <CardHeader>
@@ -103,10 +114,11 @@ export default async function DashboardPage() {
         </>
       ) : (
         <>
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {[
               ["Saved combos", data.comboCount],
               ["Decks", data.deckCount],
+              ["Training", data.trainingCount],
               ["Tournaments", data.tournamentCount],
               ["Logged matches", data.matchCount]
             ].map(([label, value]) => (

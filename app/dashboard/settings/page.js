@@ -4,8 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { requireSession } from "@/lib/auth";
+import { isBuildPhase } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 export default async function SettingsPage({ searchParams }) {
+  if (isBuildPhase) {
+    return null;
+  }
+
   const session = await requireSession();
   const params = await searchParams;
 

@@ -12,7 +12,9 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { requireSession } from "@/lib/auth";
 import { beybladeData, comboLabel, getPartById } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
-import { formatDate } from "@/lib/utils";
+import { formatDate, isBuildPhase } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 const finishTypeLabels = {
   XTREME: "Xtreme Finish",
@@ -29,6 +31,10 @@ function opponentComboLabel(match) {
 }
 
 export default async function TournamentsPage({ searchParams }) {
+  if (isBuildPhase) {
+    return null;
+  }
+
   const session = await requireSession();
   const params = await searchParams;
 

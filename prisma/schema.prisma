@@ -20,6 +20,7 @@ model User {
   combos              Combo[]
   decks               Deck[]
   tournaments         Tournament[]
+  trainingSessions    TrainingSession[]
 }
 
 model Combo {
@@ -39,6 +40,8 @@ model Combo {
   owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   deckSlots   DeckSlot[]
   yourMatches Match[]    @relation("MatchYourCombo")
+  trainingYourMatches TrainingMatch[] @relation("TrainingYourCombo")
+  trainingOpponentMatches TrainingMatch[] @relation("TrainingOpponentCombo")
 
   @@unique([ownerId, name])
 }
@@ -91,6 +94,31 @@ model Match {
   playedAt          DateTime   @default(now())
   tournament        Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   yourCombo         Combo      @relation("MatchYourCombo", fields: [yourComboId], references: [id])
+}
+
+model TrainingSession {
+  id        String          @id @default(cuid())
+  name      String
+  createdAt DateTime        @default(now())
+  ownerId   String
+  matches   TrainingMatch[]
+  owner     User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, name])
+}
+
+model TrainingMatch {
+  id                String          @id @default(cuid())
+  trainingSessionId String
+  yourComboId       String
+  opponentComboId   String
+  winner            WinnerSide
+  finishType        FinishType
+  pointsDelta       Int
+  playedAt          DateTime        @default(now())
+  trainingSession   TrainingSession @relation(fields: [trainingSessionId], references: [id], onDelete: Cascade)
+  yourCombo         Combo           @relation("TrainingYourCombo", fields: [yourComboId], references: [id])
+  opponentCombo     Combo           @relation("TrainingOpponentCombo", fields: [opponentComboId], references: [id])
 }
 
 enum UserRole {
