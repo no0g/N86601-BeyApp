@@ -1,4 +1,11 @@
-import { createTrainingMatchAction, createTrainingSessionAction } from "@/app/actions/training";
+import {
+  createTrainingMatchAction,
+  createTrainingSessionAction,
+  deleteTrainingMatchAction,
+  deleteTrainingSessionAction,
+  updateTrainingMatchAction,
+  updateTrainingSessionAction
+} from "@/app/actions/training";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -204,6 +211,33 @@ export default async function TrainingPage({ searchParams }) {
                     </div>
                   </div>
                 </div>
+                <details className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
+                  <summary className="cursor-pointer text-sm font-medium">Edit or delete training session</summary>
+                  <form action={updateTrainingSessionAction} className="mt-4 flex flex-wrap gap-3">
+                    <input type="hidden" name="trainingSessionId" value={trainingSession.id} />
+                    <div className="min-w-[240px] flex-1 space-y-2">
+                      <Label htmlFor={`training-session-name-${trainingSession.id}`}>Training session name</Label>
+                      <Input
+                        id={`training-session-name-${trainingSession.id}`}
+                        name="name"
+                        defaultValue={trainingSession.name}
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <SubmitButton pendingLabel="Updating session...">Save changes</SubmitButton>
+                      <button
+                        type="submit"
+                        formAction={deleteTrainingSessionAction}
+                        name="trainingSessionId"
+                        value={trainingSession.id}
+                        className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
+                      >
+                        Delete session
+                      </button>
+                    </div>
+                  </form>
+                </details>
                 <div className="mt-4 space-y-3">
                   {trainingSession.matches.length ? (
                     trainingSession.matches.map((match) => (
@@ -233,6 +267,91 @@ export default async function TrainingPage({ searchParams }) {
                         <div className="mt-1 text-sm text-muted-foreground">
                           {finishTypeLabels[match.finishType]} | Point delta: {match.pointsDelta > 0 ? `+${match.pointsDelta}` : match.pointsDelta}
                         </div>
+                        <details className="mt-4 rounded-xl border border-border bg-white/60 p-3">
+                          <summary className="cursor-pointer text-sm font-medium">Edit or delete log</summary>
+                          <form action={updateTrainingMatchAction} className="mt-4 grid gap-4 md:grid-cols-2">
+                            <input type="hidden" name="trainingMatchId" value={match.id} />
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor={`training-session-${match.id}`}>Training session</Label>
+                              <Select
+                                id={`training-session-${match.id}`}
+                                name="trainingSessionId"
+                                defaultValue={trainingSession.id}
+                                required
+                              >
+                                {trainingSessions.map((sessionItem) => (
+                                  <option key={sessionItem.id} value={sessionItem.id}>
+                                    {sessionItem.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`your-combo-${match.id}`}>Your combo</Label>
+                              <Select
+                                id={`your-combo-${match.id}`}
+                                name="yourComboId"
+                                defaultValue={match.yourComboId}
+                                required
+                              >
+                                {yourCombos.map((combo) => (
+                                  <option key={combo.id} value={combo.id}>
+                                    {combo.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`opponent-combo-${match.id}`}>Opponent combo</Label>
+                              <Select
+                                id={`opponent-combo-${match.id}`}
+                                name="opponentComboId"
+                                defaultValue={match.opponentComboId}
+                                required
+                              >
+                                {allCombos.map((combo) => (
+                                  <option key={combo.id} value={combo.id}>
+                                    {combo.name} - {combo.owner.displayName}
+                                  </option>
+                                ))}
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`winner-${match.id}`}>Result</Label>
+                              <Select id={`winner-${match.id}`} name="winner" defaultValue={match.winner} required>
+                                <option value="YOUR">Your combo won</option>
+                                <option value="OPPONENT">Opponent combo won</option>
+                                <option value="DRAW">Draw</option>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`finish-${match.id}`}>Finish type</Label>
+                              <Select
+                                id={`finish-${match.id}`}
+                                name="finishType"
+                                defaultValue={match.finishType}
+                                required
+                              >
+                                <option value="XTREME">Xtreme Finish (+/- 3)</option>
+                                <option value="BURST">Burst Finish (+/- 2)</option>
+                                <option value="OVER">Over Finish (+/- 2)</option>
+                                <option value="SPIN">Spin Finish (+/- 1)</option>
+                              </Select>
+                            </div>
+                            <div className="flex flex-wrap gap-3 md:col-span-2">
+                              <SubmitButton pendingLabel="Updating log...">Save changes</SubmitButton>
+                              <button
+                                type="submit"
+                                formAction={deleteTrainingMatchAction}
+                                name="trainingMatchId"
+                                value={match.id}
+                                className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
+                              >
+                                Delete log
+                              </button>
+                            </div>
+                          </form>
+                        </details>
                       </div>
                     ))
                   ) : (

@@ -56,6 +56,38 @@ function buildComboRecords(matches) {
     .slice(0, 8);
 }
 
+function buildTrainingComboRecords(trainingMatches) {
+  const records = new Map();
+
+  for (const match of trainingMatches) {
+    const comboId = match.yourCombo.id;
+
+    if (!records.has(comboId)) {
+      records.set(comboId, { combo: match.yourCombo, wins: 0, losses: 0, draws: 0, points: 0 });
+    }
+
+    if (match.winner === "YOUR") {
+      records.get(comboId).wins += 1;
+    } else if (match.winner === "OPPONENT") {
+      records.get(comboId).losses += 1;
+    } else {
+      records.get(comboId).draws += 1;
+    }
+
+    records.get(comboId).points += match.pointsDelta;
+  }
+
+  return [...records.values()]
+    .map((entry) => ({
+      ...entry,
+      total: entry.wins + entry.losses + entry.draws,
+      winRate:
+        entry.wins + entry.losses === 0 ? 0 : entry.wins / (entry.wins + entry.losses)
+    }))
+    .sort((a, b) => b.wins - a.wins || b.points - a.points || b.winRate - a.winRate)
+    .slice(0, 8);
+}
+
 export default async function AdminPage({ searchParams }) {
   if (isBuildPhase) {
     return null;
@@ -64,7 +96,7 @@ export default async function AdminPage({ searchParams }) {
   await requireAdmin();
   const params = await searchParams;
 
-  const [users, counts, matches, combos, decks, tournaments] = await Promise.all([
+  const [users, counts, matches, trainingMatches, combos, decks, tournaments, trainingSessions] = await Promise.all([
     prisma.user.findMany({
       include: {
         _count: {
@@ -81,12 +113,30 @@ export default async function AdminPage({ searchParams }) {
       prisma.user.count(),
       prisma.combo.count(),
       prisma.deck.count(),
+      prisma.trainingSession.count(),
       prisma.tournament.count(),
-      prisma.match.count()
+      prisma.match.count(),
+      prisma.trainingMatch.count()
     ]),
     prisma.match.findMany({
       include: {
         yourCombo: true
+      }
+    }),
+    prisma.trainingMatch.findMany({
+      include: {
+        yourCombo: true,
+        opponentCombo: true,
+        trainingSession: {
+          include: {
+            owner: {
+              select: {
+                username: true,
+                displayName: true
+              }
+            }
+          }
+        }
       }
     }),
     prisma.combo.findMany({
@@ -133,11 +183,30 @@ export default async function AdminPage({ searchParams }) {
         }
       },
       orderBy: [{ createdAt: "desc" }]
+    }),
+    prisma.trainingSession.findMany({
+      include: {
+        owner: {
+          select: {
+            username: true,
+            displayName: true
+          }
+        },
+        matches: {
+          include: {
+            yourCombo: true,
+            opponentCombo: true
+          },
+          orderBy: { playedAt: "desc" }
+        }
+      },
+      orderBy: [{ createdAt: "desc" }]
     })
   ]);
 
-  const [userCount, comboCount, deckCount, tournamentCount, matchCount] = counts;
+  const [userCount, comboCount, deckCount, trainingSessionCount, tournamentCount, matchCount, trainingMatchCount] = counts;
   const topCombos = buildComboRecords(matches);
+  const topTrainingCombos = buildTrainingComboRecords(trainingMatches);
 
   return (
     <div className="space-y-6">
@@ -152,13 +221,15 @@ export default async function AdminPage({ searchParams }) {
         </div>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
         {[
           ["Users", userCount],
           ["Combos", comboCount],
           ["Decks", deckCount],
+          ["Training", trainingSessionCount],
           ["Tournaments", tournamentCount],
-          ["Matches", matchCount]
+          ["Tournament matches", matchCount],
+          ["Training matches", trainingMatchCount]
         ].map(([label, value]) => (
           <Card key={label}>
             <CardHeader>
@@ -169,7 +240,7 @@ export default async function AdminPage({ searchParams }) {
         ))}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[0.9fr,1.1fr]">
+      <div className="grid gap-6 xl:grid-cols-[0.8fr,1fr,1fr]">
         <Card>
           <CardHeader>
             <CardTitle>Create user</CardTitle>
@@ -219,6 +290,36 @@ export default async function AdminPage({ searchParams }) {
             ) : (
               <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
                 No match history yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top training combos</CardTitle>
+            <CardDescription>Cross-user practice ranking from all logged training matches.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topTrainingCombos.length ? (
+              topTrainingCombos.map((entry) => (
+                <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-medium">{entry.combo.name}</div>
+                      <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div className="font-semibold">{entry.wins} wins</div>
+                      <div className="text-muted-foreground">{entry.points} points</div>
+                      <div className="text-muted-foreground">{formatPercent(entry.winRate)} win rate</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No training history yet.
               </div>
             )}
           </CardContent>
@@ -414,6 +515,72 @@ export default async function AdminPage({ searchParams }) {
           ) : (
             <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
               No tournaments created yet.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All training sessions and logs</CardTitle>
+          <CardDescription>Read-only list of training sessions with every internal practice match.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {trainingSessions.length ? (
+            trainingSessions.map((trainingSession) => (
+              <div key={trainingSession.id} className="rounded-2xl border border-border p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="font-semibold">{trainingSession.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {trainingSession.owner.displayName} (@{trainingSession.owner.username})
+                    </div>
+                  </div>
+                  <div className="text-right text-sm text-muted-foreground">
+                    <div>{trainingSession.matches.length} matches</div>
+                    <div>{formatDate(trainingSession.createdAt)}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {trainingSession.matches.length ? (
+                    trainingSession.matches.map((match) => (
+                      <div key={match.id} className="rounded-xl bg-muted/50 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="text-sm font-medium">
+                            {match.yourCombo.name} vs {match.opponentCombo.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{formatDate(match.playedAt)}</div>
+                        </div>
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          {comboLabel(match.yourCombo)} vs {comboLabel(match.opponentCombo)}
+                        </div>
+                        <div className="mt-2 text-sm">
+                          Result:{" "}
+                          <span className="font-semibold">
+                            {match.winner === "YOUR"
+                              ? `${match.yourCombo.name} won`
+                              : match.winner === "OPPONENT"
+                                ? `${match.opponentCombo.name} won`
+                                : "Draw"}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          {finishTypeLabels[match.finishType]} | Point delta: {match.pointsDelta > 0 ? `+${match.pointsDelta}` : match.pointsDelta}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
+                      No training matches logged yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              No training sessions created yet.
             </div>
           )}
         </CardContent>
