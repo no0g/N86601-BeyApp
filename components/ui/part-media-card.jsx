@@ -21,7 +21,8 @@ export function PartMediaCard({
   mini = false,
   tiny = false,
   dark = false,
-  stretchTextOnly = false
+  stretchTextOnly = false,
+  className = ""
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = part?.image ? `${BEYBREW_IMAGE_BASE_URL}/${part.image}` : null;
@@ -32,7 +33,7 @@ export function PartMediaCard({
     <div
       className={`${stretchTextOnly ? "h-full" : "h-fit"} rounded-2xl border ${tiny ? "p-1.5" : mini ? "p-2" : "p-2.5"} ${
         dark ? "border-white/10 bg-white/5 text-white" : "border-border bg-muted/30 text-foreground"
-      }`}
+      } ${className}`}
     >
       {showImage ? (
         <div
@@ -59,7 +60,7 @@ export function PartMediaCard({
                 ? "mt-1.5"
                 : "mt-2"
             : stretchTextOnly
-              ? "flex h-full min-h-[170px] flex-col items-center justify-center text-center"
+              ? "flex h-full min-h-0 flex-col items-center justify-center text-center"
               : "flex min-h-[84px] flex-col items-center justify-center text-center"
         }`}
       >
@@ -72,10 +73,10 @@ export function PartMediaCard({
             <span className="text-sm font-semibold">{initialsForPart(part)}</span>
           </div>
         ) : null}
-        <div className={`${tiny ? "text-xs" : mini ? "text-sm" : "text-sm"} leading-tight font-semibold ${dark ? "text-white" : "text-foreground"}`}>
+        <div className={`${tiny ? "text-sm" : mini ? "text-base" : "text-base"} leading-tight font-semibold ${dark ? "text-white" : "text-foreground"}`}>
           {name}
         </div>
-        <div className={`${tiny ? "text-[10px]" : "text-xs"} leading-tight ${dark ? "text-slate-300" : "text-muted-foreground"}`}>
+        <div className={`${tiny ? "text-xs" : "text-sm"} leading-tight ${dark ? "text-slate-300" : "text-muted-foreground"}`}>
           {part?.source || "Part"}
         </div>
       </div>
