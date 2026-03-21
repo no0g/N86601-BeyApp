@@ -90,7 +90,7 @@ export function EditableComboCard({ combo }) {
       </div>
 
       <div className="mt-4">
-        <ComboPartsShowcase blade={parts[0]} ratchet={parts[1]} bit={parts[2]} compact />
+        <ComboPartsShowcase blade={parts[0]} ratchet={parts[1]} bit={parts[2]} tiny />
       </div>
 
       <details className="mt-4 rounded-xl border border-border bg-muted/30 p-3">

@@ -15,27 +15,27 @@ function initialsForPart(part) {
     .toUpperCase();
 }
 
-export function PartMediaCard({ part, compact = false, mini = false, dark = false }) {
+export function PartMediaCard({ part, compact = false, mini = false, tiny = false, dark = false }) {
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = part?.image ? `${BEYBREW_IMAGE_BASE_URL}/${part.image}` : null;
   const name = part?.altname || part?.name || "Unknown part";
 
   return (
     <div
-      className={`rounded-2xl border ${mini ? "p-2" : "p-3"} ${
+      className={`rounded-2xl border ${tiny ? "p-1.5" : mini ? "p-2" : "p-3"} ${
         dark ? "border-white/10 bg-white/5" : "border-border bg-muted/30"
       }`}
     >
       <div
         className={`relative overflow-hidden rounded-xl ${
-          compact ? "aspect-[4/3]" : mini ? "aspect-[5/4]" : "aspect-square"
+          tiny ? "aspect-[6/4]" : compact ? "aspect-[4/3]" : mini ? "aspect-[5/4]" : "aspect-square"
         } ${dark ? "bg-slate-900/60" : "bg-white"}`}
       >
         {imageSrc && !imageFailed ? (
           <img
             src={imageSrc}
             alt={name}
-            className={`h-full w-full object-contain ${mini ? "p-1.5" : "p-2"}`}
+            className={`h-full w-full object-contain ${tiny ? "p-1" : mini ? "p-1.5" : "p-2"}`}
             loading="lazy"
             referrerPolicy="no-referrer"
             onError={() => setImageFailed(true)}
@@ -50,11 +50,11 @@ export function PartMediaCard({ part, compact = false, mini = false, dark = fals
           </div>
         )}
       </div>
-      <div className={mini ? "mt-2" : "mt-3"}>
-        <div className={`${mini ? "text-xs" : "text-sm"} font-medium ${dark ? "text-white" : "text-slate-900"}`}>
+      <div className={tiny ? "mt-1.5" : mini ? "mt-2" : "mt-3"}>
+        <div className={`${tiny ? "text-[11px]" : mini ? "text-xs" : "text-sm"} font-medium ${dark ? "text-white" : "text-slate-900"}`}>
           {name}
         </div>
-        <div className={`text-[11px] ${dark ? "text-slate-400" : "text-muted-foreground"}`}>
+        <div className={`${tiny ? "text-[10px]" : "text-[11px]"} ${dark ? "text-slate-400" : "text-muted-foreground"}`}>
           {part?.source || "Part"}{part?.image && imageFailed ? " • image missing" : ""}
         </div>
       </div>

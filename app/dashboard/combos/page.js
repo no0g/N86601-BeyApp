@@ -11,6 +11,7 @@ import { isBuildPhase } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 5;
+const TEAM_PAGE_SIZE = 4;
 
 export default async function CombosPage({ searchParams }) {
   if (isBuildPhase) {
@@ -20,6 +21,7 @@ export default async function CombosPage({ searchParams }) {
   const session = await requireSession();
   const params = await searchParams;
   const currentPage = Math.max(1, Number(params?.page || 1) || 1);
+  const currentTeamPage = Math.max(1, Number(params?.teamPage || 1) || 1);
 
   const [combos, comboCount] =
     session.role === "ADMIN"
@@ -36,23 +38,32 @@ export default async function CombosPage({ searchParams }) {
           })
         ]);
 
-  const teamCombos =
+  const [teamCombos, teamComboCount] =
     session.role === "ADMIN"
-      ? []
-      : await prisma.combo.findMany({
-          where: {
-            ownerId: { not: session.sub }
-          },
-          include: {
-            owner: {
-              select: {
-                username: true,
-                displayName: true
+      ? [[], 0]
+      : await Promise.all([
+          prisma.combo.findMany({
+            where: {
+              ownerId: { not: session.sub }
+            },
+            include: {
+              owner: {
+                select: {
+                  username: true,
+                  displayName: true
+                }
               }
+            },
+            orderBy: [{ owner: { displayName: "asc" } }, { createdAt: "desc" }],
+            skip: (currentTeamPage - 1) * TEAM_PAGE_SIZE,
+            take: TEAM_PAGE_SIZE
+          }),
+          prisma.combo.count({
+            where: {
+              ownerId: { not: session.sub }
             }
-          },
-          orderBy: [{ owner: { displayName: "asc" } }, { createdAt: "desc" }]
-        });
+          })
+        ]);
 
   return (
     <div className="space-y-6">
@@ -134,54 +145,90 @@ export default async function CombosPage({ searchParams }) {
             </CardHeader>
             <CardContent className="space-y-4">
               {teamCombos.length ? (
-                teamCombos.map((combo) => (
-                  <div key={combo.id} className="rounded-2xl border border-border p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="font-semibold">{combo.name}</div>
-                        <div className="text-sm text-muted-foreground">{comboLabel(combo)}</div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {teamCombos.map((combo) => (
+                    <div key={combo.id} className="rounded-2xl border border-border p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="font-semibold">{combo.name}</div>
+                          <div className="text-sm text-muted-foreground">{comboLabel(combo)}</div>
+                        </div>
+                        <div className="text-right text-sm text-muted-foreground">
+                          <div>{combo.owner.displayName}</div>
+                          <div>@{combo.owner.username}</div>
+                        </div>
                       </div>
-                      <div className="text-right text-sm text-muted-foreground">
-                        <div>{combo.owner.displayName}</div>
-                        <div>@{combo.owner.username}</div>
+                      <div className="mt-4">
+                        <ComboPartsShowcase
+                          blade={getPartById(combo.bladeId)}
+                          ratchet={getPartById(combo.ratchetId)}
+                          bit={getPartById(combo.bitId)}
+                          tiny
+                        />
+                      </div>
+                      <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
+                        <div className="rounded-xl bg-rose-50 p-2">
+                          <div className="text-muted-foreground">ATK</div>
+                          <div className="text-sm font-semibold">{combo.attack}</div>
+                        </div>
+                        <div className="rounded-xl bg-sky-50 p-2">
+                          <div className="text-muted-foreground">DEF</div>
+                          <div className="text-sm font-semibold">{combo.defense}</div>
+                        </div>
+                        <div className="rounded-xl bg-emerald-50 p-2">
+                          <div className="text-muted-foreground">STA</div>
+                          <div className="text-sm font-semibold">{combo.stamina}</div>
+                        </div>
+                        <div className="rounded-xl bg-amber-50 p-2">
+                          <div className="text-muted-foreground">XTR</div>
+                          <div className="text-sm font-semibold">{combo.xtreme}</div>
+                        </div>
+                        <div className="rounded-xl bg-cyan-50 p-2">
+                          <div className="text-muted-foreground">BUR</div>
+                          <div className="text-sm font-semibold">{combo.burst}</div>
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-4">
-                      <ComboPartsShowcase
-                        blade={getPartById(combo.bladeId)}
-                        ratchet={getPartById(combo.ratchetId)}
-                        bit={getPartById(combo.bitId)}
-                      />
-                    </div>
-                    <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
-                      <div className="rounded-xl bg-rose-50 p-2">
-                        <div className="text-muted-foreground">ATK</div>
-                        <div className="text-sm font-semibold">{combo.attack}</div>
-                      </div>
-                      <div className="rounded-xl bg-sky-50 p-2">
-                        <div className="text-muted-foreground">DEF</div>
-                        <div className="text-sm font-semibold">{combo.defense}</div>
-                      </div>
-                      <div className="rounded-xl bg-emerald-50 p-2">
-                        <div className="text-muted-foreground">STA</div>
-                        <div className="text-sm font-semibold">{combo.stamina}</div>
-                      </div>
-                      <div className="rounded-xl bg-amber-50 p-2">
-                        <div className="text-muted-foreground">XTR</div>
-                        <div className="text-sm font-semibold">{combo.xtreme}</div>
-                      </div>
-                      <div className="rounded-xl bg-cyan-50 p-2">
-                        <div className="text-muted-foreground">BUR</div>
-                        <div className="text-sm font-semibold">{combo.burst}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
                   No other team combos yet.
                 </div>
               )}
+              {teamComboCount > TEAM_PAGE_SIZE ? (
+                <div className="flex items-center justify-between rounded-2xl border border-border px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">
+                    Team page {currentTeamPage} of {Math.ceil(teamComboCount / TEAM_PAGE_SIZE)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {currentTeamPage > 1 ? (
+                      <a
+                        href={`/dashboard/combos?page=${currentPage}&teamPage=${currentTeamPage - 1}`}
+                        className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
+                      >
+                        Previous
+                      </a>
+                    ) : (
+                      <span className="rounded-xl border border-border px-3 py-1.5 text-sm text-muted-foreground">
+                        Previous
+                      </span>
+                    )}
+                    {currentTeamPage < Math.ceil(teamComboCount / TEAM_PAGE_SIZE) ? (
+                      <a
+                        href={`/dashboard/combos?page=${currentPage}&teamPage=${currentTeamPage + 1}`}
+                        className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
+                      >
+                        Next
+                      </a>
+                    ) : (
+                      <span className="rounded-xl border border-border px-3 py-1.5 text-sm text-muted-foreground">
+                        Next
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </>
