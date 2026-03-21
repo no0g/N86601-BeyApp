@@ -30,7 +30,7 @@ const baseLinks = [
 
 function ShellSidebar({ links, session, onNavigate }) {
   return (
-    <div className="shell-sidebar flex h-full flex-col rounded-3xl border border-border bg-card p-5 shadow-xl shadow-slate-200/60 backdrop-blur">
+    <div className="shell-sidebar flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/60 dark:border-white/10 dark:bg-slate-900/88">
       <div className="space-y-2 border-b border-border pb-5">
         <Link href="/" className="flex items-center gap-3" onClick={onNavigate}>
           <Image
@@ -93,7 +93,7 @@ export function AppShell({ session, children }) {
   return (
     <div className="app-shell min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_35%),linear-gradient(180deg,_#f8fafc,_#eef2ff)]">
       <div className="mx-auto max-w-7xl px-4 py-4 lg:hidden">
-        <div className="flex items-center justify-between rounded-3xl border border-border bg-card px-4 py-3 shadow-lg shadow-slate-200/50 backdrop-blur dark:border-white/10 dark:bg-slate-900/85 dark:shadow-slate-950/40">
+        <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-lg shadow-slate-200/50 dark:border-white/10 dark:bg-slate-900/85 dark:shadow-slate-950/40">
           <Link href="/" className="flex items-center gap-3">
             <Image
               src="/logo.png"

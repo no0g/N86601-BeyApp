@@ -157,7 +157,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-border bg-card p-8 shadow-xl shadow-slate-200/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:shadow-slate-950/40">
+      <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60 dark:border-white/10 dark:bg-slate-900/80 dark:shadow-slate-950/40">
         <div className="flex flex-wrap items-center gap-3">
           <Badge>{session.role}</Badge>
           <h1 className="text-3xl font-semibold">Welcome, {session.displayName}</h1>

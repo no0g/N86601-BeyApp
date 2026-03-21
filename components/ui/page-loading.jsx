@@ -33,7 +33,7 @@ export function PageLoading({
   }, [details]);
 
   return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-[2rem] border border-border bg-card px-6 py-12 text-center shadow-xl shadow-slate-200/60 backdrop-blur dark:border-white/10 dark:bg-slate-900/80 dark:shadow-slate-950/40">
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 rounded-[2rem] border border-slate-200 bg-white px-6 py-12 text-center shadow-xl shadow-slate-200/60 dark:border-white/10 dark:bg-slate-900/80 dark:shadow-slate-950/40">
       <div className="relative h-14 w-14">
         <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
         <div className="absolute inset-0 animate-spin rounded-full border-4 border-emerald-500 border-t-slate-900" />
