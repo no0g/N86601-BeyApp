@@ -22,20 +22,20 @@ export function PartMediaCard({ part, compact = false, mini = false, tiny = fals
 
   return (
     <div
-      className={`rounded-2xl border ${tiny ? "p-1.5" : mini ? "p-2" : "p-3"} ${
+      className={`rounded-2xl border ${tiny ? "p-1.5" : mini ? "p-2" : "p-2.5"} ${
         dark ? "border-white/10 bg-white/5" : "border-border bg-muted/30"
       }`}
     >
       <div
         className={`relative overflow-hidden rounded-xl ${
-          tiny ? "aspect-[6/4]" : compact ? "aspect-[4/3]" : mini ? "aspect-[5/4]" : "aspect-square"
+          tiny ? "aspect-[6/4]" : compact ? "aspect-[5/3]" : mini ? "aspect-[5/4]" : "aspect-[10/9]"
         } ${dark ? "bg-slate-900/60" : "bg-white"}`}
       >
         {imageSrc && !imageFailed ? (
           <img
             src={imageSrc}
             alt={name}
-            className={`h-full w-full object-contain ${tiny ? "p-1" : mini ? "p-1.5" : "p-2"}`}
+            className={`h-full w-full object-contain ${tiny ? "p-1" : mini ? "p-1.5" : "p-1.5"}`}
             loading="lazy"
             referrerPolicy="no-referrer"
             onError={() => setImageFailed(true)}
@@ -50,11 +50,11 @@ export function PartMediaCard({ part, compact = false, mini = false, tiny = fals
           </div>
         )}
       </div>
-      <div className={tiny ? "mt-1.5" : mini ? "mt-2" : "mt-3"}>
-        <div className={`${tiny ? "text-[11px]" : mini ? "text-xs" : "text-sm"} font-medium ${dark ? "text-white" : "text-slate-900"}`}>
+      <div className={tiny ? "mt-1" : mini ? "mt-1.5" : "mt-2"}>
+        <div className={`${tiny ? "text-[11px]" : mini ? "text-xs" : "text-xs"} leading-tight font-medium ${dark ? "text-white" : "text-slate-900"}`}>
           {name}
         </div>
-        <div className={`${tiny ? "text-[10px]" : "text-[11px]"} ${dark ? "text-slate-400" : "text-muted-foreground"}`}>
+        <div className={`${tiny ? "text-[10px]" : "text-[10px]"} leading-tight ${dark ? "text-slate-400" : "text-muted-foreground"}`}>
           {part?.source || "Part"}{part?.image && imageFailed ? " • image missing" : ""}
         </div>
       </div>
