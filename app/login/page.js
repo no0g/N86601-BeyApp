@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { getOptionalSession } from "@/lib/auth";
 
 export default async function LoginPage({ searchParams }) {
@@ -17,7 +18,7 @@ export default async function LoginPage({ searchParams }) {
   const error = params?.error;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,_#0f172a,_#064e3b_45%,_#f8fafc)] px-4 py-10">
+    <div className="public-surface flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,_#0f172a,_#064e3b_45%,_#f8fafc)] px-4 py-10">
       <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr,0.9fr]">
         <div className="rounded-[2rem] border border-white/10 bg-black/20 p-8 text-white backdrop-blur">
           <div className="flex items-center gap-4">
@@ -56,7 +57,11 @@ export default async function LoginPage({ searchParams }) {
           </div>
         </div>
 
-        <Card className="rounded-[2rem] border-white/60 bg-white/90 shadow-2xl shadow-slate-950/10">
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <ThemeToggle />
+          </div>
+          <Card className="rounded-[2rem] border-white/60 bg-white/90 shadow-2xl shadow-slate-950/10">
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
             <CardDescription>Use your admin account or a user account created by the admin.</CardDescription>
@@ -81,7 +86,8 @@ export default async function LoginPage({ searchParams }) {
               </SubmitButton>
             </form>
           </CardContent>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );

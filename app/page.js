@@ -2,12 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { getOptionalSession } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default async function HomePage() {
   const session = await getOptionalSession();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="public-surface min-h-screen bg-slate-50">
       <section className="overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(239,68,68,0.18),_transparent_25%),linear-gradient(180deg,_#020617,_#0f172a)] text-white">
         <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6">
           <div className="flex items-center gap-3">
@@ -25,6 +26,7 @@ export default async function HomePage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link href={session ? "/dashboard" : "/login"}>
               <Button variant="secondary">{session ? "Open Dashboard" : "Sign In"}</Button>
             </Link>

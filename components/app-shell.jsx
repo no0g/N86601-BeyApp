@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const baseLinks = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -29,7 +30,7 @@ const baseLinks = [
 
 function ShellSidebar({ links, session, onNavigate }) {
   return (
-    <div className="flex h-full flex-col rounded-3xl border border-white/70 bg-white/90 p-5 shadow-xl shadow-slate-200/60 backdrop-blur">
+    <div className="shell-sidebar flex h-full flex-col rounded-3xl border border-white/70 bg-white/90 p-5 shadow-xl shadow-slate-200/60 backdrop-blur">
       <div className="space-y-2 border-b border-border pb-5">
         <Link href="/" className="flex items-center gap-3" onClick={onNavigate}>
           <Image
@@ -48,6 +49,10 @@ function ShellSidebar({ links, session, onNavigate }) {
           <Badge>{session.role}</Badge>
           <span className="text-sm text-muted-foreground">{session.displayName}</span>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <ThemeToggle className="w-full justify-center" />
       </div>
 
       <nav className="mt-5 space-y-2">
@@ -86,7 +91,7 @@ export function AppShell({ session, children }) {
       : baseLinks;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_35%),linear-gradient(180deg,_#f8fafc,_#eef2ff)]">
+    <div className="app-shell min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_35%),linear-gradient(180deg,_#f8fafc,_#eef2ff)]">
       <div className="mx-auto max-w-7xl px-4 py-4 lg:hidden">
         <div className="flex items-center justify-between rounded-3xl border border-white/70 bg-white/85 px-4 py-3 shadow-lg shadow-slate-200/50 backdrop-blur">
           <Link href="/" className="flex items-center gap-3">
@@ -110,6 +115,9 @@ export function AppShell({ session, children }) {
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <ThemeToggle />
         </div>
       </div>
 
