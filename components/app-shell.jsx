@@ -16,7 +16,10 @@ const baseLinks = [
 export function AppShell({ session, children }) {
   const links =
     session.role === "ADMIN"
-      ? [...baseLinks.filter((item) => item.href !== "/dashboard/decks" && item.href !== "/dashboard/tournaments" && item.href !== "/dashboard/combos" && item.href !== "/dashboard/training"), { href: "/dashboard/admin", label: "Admin", icon: Users }]
+      ? [
+          ...baseLinks.filter((item) => item.href !== "/dashboard/decks" && item.href !== "/dashboard/combos"),
+          { href: "/dashboard/admin", label: "Admin", icon: Users }
+        ]
       : baseLinks;
 
   return (

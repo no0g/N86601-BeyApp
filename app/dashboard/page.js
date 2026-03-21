@@ -65,7 +65,7 @@ export default async function DashboardPage() {
         </div>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
           {session.role === "ADMIN"
-            ? "Manage player accounts and review usage across the whole app."
+            ? "Manage player accounts, review usage across the whole app, and jump directly into training or tournament logging."
             : "Build combos, form legal decks, and log tournament matchups for your Beyblade X testing."}
         </p>
       </section>
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Latest users</CardTitle>
-              <CardDescription>Newly created players.</CardDescription>
+              <CardDescription>Newly created players and admin shortcuts.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {data.latestUsers.map((user) => (
@@ -106,9 +106,11 @@ export default async function DashboardPage() {
                   <div className="text-sm text-muted-foreground">{formatDate(user.createdAt)}</div>
                 </div>
               ))}
-              <Link href="/dashboard/admin" className="text-sm font-medium text-emerald-700">
-                Open admin console
-              </Link>
+              <div className="flex flex-wrap gap-4 text-sm font-medium text-emerald-700">
+                <Link href="/dashboard/admin">Open admin console</Link>
+                <Link href="/dashboard/training">Open training</Link>
+                <Link href="/dashboard/tournaments">Open tournaments</Link>
+              </div>
             </CardContent>
           </Card>
         </>
