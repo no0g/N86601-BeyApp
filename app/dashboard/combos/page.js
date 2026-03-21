@@ -168,24 +168,24 @@ export default async function CombosPage({ searchParams }) {
                       </div>
                       <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
                         <div className="rounded-xl bg-rose-50 p-2 dark:bg-rose-500/15">
-                          <div className="text-muted-foreground dark:text-rose-100/80">ATK</div>
-                          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.attack}</div>
+                          <div className="text-rose-700 dark:text-rose-100/80">ATK</div>
+                          <div className="text-sm font-semibold text-rose-950 dark:text-white">{combo.attack}</div>
                         </div>
                         <div className="rounded-xl bg-sky-50 p-2 dark:bg-sky-500/15">
-                          <div className="text-muted-foreground dark:text-sky-100/80">DEF</div>
-                          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.defense}</div>
+                          <div className="text-sky-700 dark:text-sky-100/80">DEF</div>
+                          <div className="text-sm font-semibold text-sky-950 dark:text-white">{combo.defense}</div>
                         </div>
                         <div className="rounded-xl bg-emerald-50 p-2 dark:bg-emerald-500/15">
-                          <div className="text-muted-foreground dark:text-emerald-100/80">STA</div>
-                          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.stamina}</div>
+                          <div className="text-emerald-700 dark:text-emerald-100/80">STA</div>
+                          <div className="text-sm font-semibold text-emerald-950 dark:text-white">{combo.stamina}</div>
                         </div>
                         <div className="rounded-xl bg-amber-50 p-2 dark:bg-amber-500/15">
-                          <div className="text-muted-foreground dark:text-amber-100/80">XTR</div>
-                          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.xtreme}</div>
+                          <div className="text-amber-700 dark:text-amber-100/80">XTR</div>
+                          <div className="text-sm font-semibold text-amber-950 dark:text-white">{combo.xtreme}</div>
                         </div>
                         <div className="rounded-xl bg-cyan-50 p-2 dark:bg-cyan-500/15">
-                          <div className="text-muted-foreground dark:text-cyan-100/80">BUR</div>
-                          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.burst}</div>
+                          <div className="text-cyan-700 dark:text-cyan-100/80">BUR</div>
+                          <div className="text-sm font-semibold text-cyan-950 dark:text-white">{combo.burst}</div>
                         </div>
                       </div>
                     </div>
