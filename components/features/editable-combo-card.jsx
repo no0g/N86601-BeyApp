@@ -67,25 +67,25 @@ export function EditableComboCard({ combo }) {
         </div>
       </div>
       <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
-        <div className="rounded-xl bg-rose-50 p-2">
-          <div className="text-muted-foreground">ATK</div>
-          <div className="text-sm font-semibold">{combo.attack}</div>
+        <div className="rounded-xl bg-rose-50 p-2 dark:bg-rose-500/15">
+          <div className="text-muted-foreground dark:text-rose-100/80">ATK</div>
+          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.attack}</div>
         </div>
-        <div className="rounded-xl bg-sky-50 p-2">
-          <div className="text-muted-foreground">DEF</div>
-          <div className="text-sm font-semibold">{combo.defense}</div>
+        <div className="rounded-xl bg-sky-50 p-2 dark:bg-sky-500/15">
+          <div className="text-muted-foreground dark:text-sky-100/80">DEF</div>
+          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.defense}</div>
         </div>
-        <div className="rounded-xl bg-emerald-50 p-2">
-          <div className="text-muted-foreground">STA</div>
-          <div className="text-sm font-semibold">{combo.stamina}</div>
+        <div className="rounded-xl bg-emerald-50 p-2 dark:bg-emerald-500/15">
+          <div className="text-muted-foreground dark:text-emerald-100/80">STA</div>
+          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.stamina}</div>
         </div>
-        <div className="rounded-xl bg-amber-50 p-2">
-          <div className="text-muted-foreground">XTR</div>
-          <div className="text-sm font-semibold">{combo.xtreme}</div>
+        <div className="rounded-xl bg-amber-50 p-2 dark:bg-amber-500/15">
+          <div className="text-muted-foreground dark:text-amber-100/80">XTR</div>
+          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.xtreme}</div>
         </div>
-        <div className="rounded-xl bg-cyan-50 p-2">
-          <div className="text-muted-foreground">BUR</div>
-          <div className="text-sm font-semibold">{combo.burst}</div>
+        <div className="rounded-xl bg-cyan-50 p-2 dark:bg-cyan-500/15">
+          <div className="text-muted-foreground dark:text-cyan-100/80">BUR</div>
+          <div className="text-sm font-semibold text-foreground dark:text-white">{combo.burst}</div>
         </div>
       </div>
 

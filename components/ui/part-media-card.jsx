@@ -29,7 +29,7 @@ export function PartMediaCard({ part, compact = false, mini = false, tiny = fals
       <div
         className={`relative overflow-hidden rounded-xl ${
           tiny ? "aspect-[6/4]" : compact ? "aspect-[5/3]" : mini ? "aspect-[5/4]" : "aspect-[10/9]"
-        } ${dark ? "bg-slate-900/60" : "bg-background/80"}`}
+        } bg-transparent`}
       >
         {imageSrc && !imageFailed ? (
           <img
