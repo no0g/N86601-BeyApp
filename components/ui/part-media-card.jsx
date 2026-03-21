@@ -22,7 +22,7 @@ export function PartMediaCard({ part, compact = false, mini = false, tiny = fals
 
   return (
     <div
-      className={`rounded-2xl border ${tiny ? "p-1.5" : mini ? "p-2" : "p-2.5"} ${
+      className={`h-fit rounded-2xl border ${tiny ? "p-1.5" : mini ? "p-2" : "p-2.5"} ${
         dark ? "border-white/10 bg-white/5 text-white" : "border-border bg-muted/30 text-foreground"
       }`}
     >
