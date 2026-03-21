@@ -20,12 +20,11 @@ async function validateTrainingMatch(tx, session, data, ignoreMatchId) {
   const [trainingSession, yourCombo, opponentCombo, existingMatch] = await Promise.all([
     tx.trainingSession.findFirst({
       where: {
-        id: data.trainingSessionId,
-        ownerId: session.sub
+        id: data.trainingSessionId
       }
     }),
     tx.combo.findFirst({
-      where: session.role === "ADMIN" ? { id: data.yourComboId } : { id: data.yourComboId, ownerId: session.sub }
+      where: { id: data.yourComboId }
     }),
     tx.combo.findFirst({
       where: {
@@ -35,10 +34,7 @@ async function validateTrainingMatch(tx, session, data, ignoreMatchId) {
     ignoreMatchId
       ? tx.trainingMatch.findFirst({
           where: {
-            id: ignoreMatchId,
-            trainingSession: {
-              ownerId: session.sub
-            }
+            id: ignoreMatchId
           }
         })
       : Promise.resolve(true)
@@ -148,8 +144,14 @@ export async function updateTrainingSessionAction(formData) {
   const error = await prisma.$transaction(async (tx) => {
     const trainingSession = await tx.trainingSession.findFirst({
       where: {
-        id: trainingSessionId,
-        ownerId: session.sub
+        id: trainingSessionId
+      },
+      include: {
+        owner: {
+          select: {
+            id: true
+          }
+        }
       }
     });
 
@@ -159,7 +161,7 @@ export async function updateTrainingSessionAction(formData) {
 
     const existing = await tx.trainingSession.findFirst({
       where: {
-        ownerId: session.sub,
+        ownerId: trainingSession.owner.id,
         name: parsed.data.name,
         id: { not: trainingSessionId }
       }
@@ -196,8 +198,7 @@ export async function deleteTrainingSessionAction(formData) {
   const error = await prisma.$transaction(async (tx) => {
     const trainingSession = await tx.trainingSession.findFirst({
       where: {
-        id: trainingSessionId,
-        ownerId: session.sub
+        id: trainingSessionId
       }
     });
 
@@ -275,10 +276,7 @@ export async function deleteTrainingMatchAction(formData) {
   const error = await prisma.$transaction(async (tx) => {
     const trainingMatch = await tx.trainingMatch.findFirst({
       where: {
-        id: trainingMatchId,
-        trainingSession: {
-          ownerId: session.sub
-        }
+        id: trainingMatchId
       }
     });
 

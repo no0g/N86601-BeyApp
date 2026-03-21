@@ -25,11 +25,7 @@ const finishTypeLabels = {
   SPIN: "Spin Finish"
 };
 
-function comboOptionLabel(combo, showOwner) {
-  if (!showOwner) {
-    return combo.name;
-  }
-
+function comboOptionLabel(combo) {
   return `${combo.name} - ${combo.owner.displayName}`;
 }
 
@@ -38,25 +34,10 @@ export default async function TrainingPage({ searchParams }) {
     return null;
   }
 
-  const session = await requireSession();
+  await requireSession();
   const params = await searchParams;
-  const showOwner = session.role === "ADMIN";
 
-  const comboQuery = {
-    where: showOwner ? undefined : { ownerId: session.sub },
-    include: {
-      owner: {
-        select: {
-          username: true,
-          displayName: true
-        }
-      }
-    },
-    orderBy: showOwner ? [{ owner: { displayName: "asc" } }, { createdAt: "desc" }] : { createdAt: "desc" }
-  };
-
-  const [yourCombos, allCombos, trainingSessions] = await Promise.all([
-    prisma.combo.findMany(comboQuery),
+  const [teamCombos, trainingSessions] = await Promise.all([
     prisma.combo.findMany({
       include: {
         owner: {
@@ -69,8 +50,13 @@ export default async function TrainingPage({ searchParams }) {
       orderBy: [{ owner: { displayName: "asc" } }, { createdAt: "desc" }]
     }),
     prisma.trainingSession.findMany({
-      where: { ownerId: session.sub },
       include: {
+        owner: {
+          select: {
+            username: true,
+            displayName: true
+          }
+        },
         matches: {
           include: {
             yourCombo: {
@@ -97,7 +83,7 @@ export default async function TrainingPage({ searchParams }) {
           orderBy: { playedAt: "desc" }
         }
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: [{ createdAt: "desc" }]
     })
   ]);
 
@@ -118,7 +104,7 @@ export default async function TrainingPage({ searchParams }) {
         <Card>
           <CardHeader>
             <CardTitle>Create training session</CardTitle>
-            <CardDescription>Group internal testing matches against your own or teammate combos.</CardDescription>
+            <CardDescription>Create a shared internal practice session visible to the whole team.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={createTrainingSessionAction} className="space-y-4">
@@ -134,16 +120,12 @@ export default async function TrainingPage({ searchParams }) {
         <Card>
           <CardHeader>
             <CardTitle>Log training match</CardTitle>
-            <CardDescription>
-              {showOwner
-                ? "Admin can create internal sessions using any saved team combo on your side."
-                : "Pick your combo and an opponent combo from the team list."}
-            </CardDescription>
+            <CardDescription>Everyone can log or update shared training records using any saved team combo.</CardDescription>
           </CardHeader>
           <CardContent>
-            {yourCombos.length === 0 || allCombos.length < 2 || trainingSessions.length === 0 ? (
+            {teamCombos.length < 2 || trainingSessions.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                Create at least one training session and save at least one combo before logging internal matches.
+                Create at least one training session and save at least two combos before logging internal matches.
               </div>
             ) : (
               <form action={createTrainingMatchAction} className="grid gap-4 md:grid-cols-2">
@@ -153,7 +135,7 @@ export default async function TrainingPage({ searchParams }) {
                     <option value="">Select training session</option>
                     {trainingSessions.map((trainingSession) => (
                       <option key={trainingSession.id} value={trainingSession.id}>
-                        {trainingSession.name}
+                        {trainingSession.name} - {trainingSession.owner.displayName}
                       </option>
                     ))}
                   </Select>
@@ -162,9 +144,9 @@ export default async function TrainingPage({ searchParams }) {
                   <Label htmlFor="yourComboId">Your combo</Label>
                   <Select id="yourComboId" name="yourComboId" required>
                     <option value="">Select your combo</option>
-                    {yourCombos.map((combo) => (
+                    {teamCombos.map((combo) => (
                       <option key={combo.id} value={combo.id}>
-                        {comboOptionLabel(combo, showOwner)}
+                        {comboOptionLabel(combo)}
                       </option>
                     ))}
                   </Select>
@@ -173,9 +155,9 @@ export default async function TrainingPage({ searchParams }) {
                   <Label htmlFor="opponentComboId">Opponent combo</Label>
                   <Select id="opponentComboId" name="opponentComboId" required>
                     <option value="">Select team combo</option>
-                    {allCombos.map((combo) => (
+                    {teamCombos.map((combo) => (
                       <option key={combo.id} value={combo.id}>
-                        {combo.name} - {combo.owner.displayName}
+                        {comboOptionLabel(combo)}
                       </option>
                     ))}
                   </Select>
@@ -208,8 +190,8 @@ export default async function TrainingPage({ searchParams }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Training sessions</CardTitle>
-          <CardDescription>Your internal practice logs against team combos.</CardDescription>
+          <CardTitle>All training sessions</CardTitle>
+          <CardDescription>Shared team practice logs. Any user can update these records.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {trainingSessions.length ? (
@@ -219,7 +201,7 @@ export default async function TrainingPage({ searchParams }) {
                   <div>
                     <div className="font-semibold">{trainingSession.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {trainingSession.matches.length} matches logged
+                      Owner: {trainingSession.owner.displayName} (@{trainingSession.owner.username}) | {trainingSession.matches.length} matches logged
                     </div>
                   </div>
                 </div>
@@ -297,22 +279,17 @@ export default async function TrainingPage({ searchParams }) {
                               >
                                 {trainingSessions.map((sessionItem) => (
                                   <option key={sessionItem.id} value={sessionItem.id}>
-                                    {sessionItem.name}
+                                    {sessionItem.name} - {sessionItem.owner.displayName}
                                   </option>
                                 ))}
                               </Select>
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor={`your-combo-${match.id}`}>Your combo</Label>
-                              <Select
-                                id={`your-combo-${match.id}`}
-                                name="yourComboId"
-                                defaultValue={match.yourComboId}
-                                required
-                              >
-                                {yourCombos.map((combo) => (
+                              <Select id={`your-combo-${match.id}`} name="yourComboId" defaultValue={match.yourComboId} required>
+                                {teamCombos.map((combo) => (
                                   <option key={combo.id} value={combo.id}>
-                                    {comboOptionLabel(combo, showOwner)}
+                                    {comboOptionLabel(combo)}
                                   </option>
                                 ))}
                               </Select>
@@ -325,9 +302,9 @@ export default async function TrainingPage({ searchParams }) {
                                 defaultValue={match.opponentComboId}
                                 required
                               >
-                                {allCombos.map((combo) => (
+                                {teamCombos.map((combo) => (
                                   <option key={combo.id} value={combo.id}>
-                                    {combo.name} - {combo.owner.displayName}
+                                    {comboOptionLabel(combo)}
                                   </option>
                                 ))}
                               </Select>
@@ -342,12 +319,7 @@ export default async function TrainingPage({ searchParams }) {
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor={`finish-${match.id}`}>Finish type</Label>
-                              <Select
-                                id={`finish-${match.id}`}
-                                name="finishType"
-                                defaultValue={match.finishType}
-                                required
-                              >
+                              <Select id={`finish-${match.id}`} name="finishType" defaultValue={match.finishType} required>
                                 <option value="XTREME">Xtreme Finish (+/- 3)</option>
                                 <option value="BURST">Burst Finish (+/- 2)</option>
                                 <option value="OVER">Over Finish (+/- 2)</option>

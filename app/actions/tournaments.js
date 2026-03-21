@@ -18,18 +18,24 @@ function getPointsDelta(winner, finishType) {
   return winner === "YOUR" ? finishPoints : winner === "OPPONENT" ? -finishPoints : 0;
 }
 
-async function findOwnedTournament(tx, session, tournamentId) {
+async function findTournament(tx, tournamentId) {
   return tx.tournament.findFirst({
     where: {
-      id: tournamentId,
-      ownerId: session.sub
+      id: tournamentId
+    },
+    include: {
+      owner: {
+        select: {
+          id: true
+        }
+      }
     }
   });
 }
 
-async function findSelectableCombo(tx, session, comboId) {
+async function findSelectableCombo(tx, comboId) {
   return tx.combo.findFirst({
-    where: session.role === "ADMIN" ? { id: comboId } : { id: comboId, ownerId: session.sub }
+    where: { id: comboId }
   });
 }
 
@@ -41,15 +47,12 @@ async function validateTournamentMatch(tx, session, data, matchId) {
   }
 
   const [tournament, yourCombo, existingMatch] = await Promise.all([
-    findOwnedTournament(tx, session, data.tournamentId),
-    findSelectableCombo(tx, session, data.yourComboId),
+    findTournament(tx, data.tournamentId),
+    findSelectableCombo(tx, data.yourComboId),
     matchId
       ? tx.match.findFirst({
           where: {
-            id: matchId,
-            tournament: {
-              ownerId: session.sub
-            }
+            id: matchId
           }
         })
       : Promise.resolve(true)
@@ -113,7 +116,7 @@ export async function updateTournamentAction(formData) {
   }
 
   const error = await prisma.$transaction(async (tx) => {
-    const tournament = await findOwnedTournament(tx, session, tournamentId);
+    const tournament = await findTournament(tx, tournamentId);
 
     if (!tournament) {
       return "Tournament not found";
@@ -121,7 +124,7 @@ export async function updateTournamentAction(formData) {
 
     const existing = await tx.tournament.findFirst({
       where: {
-        ownerId: session.sub,
+        ownerId: tournament.owner.id,
         name: parsed.data.name,
         id: { not: tournamentId }
       }
@@ -155,7 +158,7 @@ export async function deleteTournamentAction(formData) {
   }
 
   const error = await prisma.$transaction(async (tx) => {
-    const tournament = await findOwnedTournament(tx, session, tournamentId);
+    const tournament = await findTournament(tx, tournamentId);
 
     if (!tournament) {
       return "Tournament not found";
@@ -268,10 +271,7 @@ export async function deleteMatchAction(formData) {
   const error = await prisma.$transaction(async (tx) => {
     const match = await tx.match.findFirst({
       where: {
-        id: matchId,
-        tournament: {
-          ownerId: session.sub
-        }
+        id: matchId
       }
     });
 
