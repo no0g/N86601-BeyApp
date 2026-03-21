@@ -4,9 +4,84 @@ import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { comboLabel } from "@/lib/beyblade-data";
-import { formatDate, isBuildPhase } from "@/lib/utils";
+import { formatDate, formatPercent, isBuildPhase } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+function buildTournamentComboRecords(matches) {
+  const records = new Map();
+
+  for (const match of matches) {
+    const comboId = match.yourCombo.id;
+
+    if (!records.has(comboId)) {
+      records.set(comboId, { combo: match.yourCombo, wins: 0, losses: 0, draws: 0, points: 0 });
+    }
+
+    if (match.winner === "YOUR") {
+      records.get(comboId).wins += 1;
+    } else if (match.winner === "OPPONENT") {
+      records.get(comboId).losses += 1;
+    } else {
+      records.get(comboId).draws += 1;
+    }
+
+    records.get(comboId).points += match.pointsDelta;
+  }
+
+  return [...records.values()]
+    .map((entry) => ({
+      ...entry,
+      total: entry.wins + entry.losses + entry.draws,
+      winRate: entry.wins + entry.losses === 0 ? 0 : entry.wins / (entry.wins + entry.losses)
+    }))
+    .sort((a, b) => b.wins - a.wins || b.points - a.points || b.winRate - a.winRate);
+}
+
+function buildTrainingComboRecords(trainingMatches) {
+  const records = new Map();
+
+  for (const match of trainingMatches) {
+    const yourComboId = match.yourCombo.id;
+    const opponentComboId = match.opponentCombo.id;
+
+    if (!records.has(yourComboId)) {
+      records.set(yourComboId, { combo: match.yourCombo, wins: 0, losses: 0, draws: 0, points: 0 });
+    }
+    if (!records.has(opponentComboId)) {
+      records.set(opponentComboId, { combo: match.opponentCombo, wins: 0, losses: 0, draws: 0, points: 0 });
+    }
+
+    if (match.winner === "YOUR") {
+      records.get(yourComboId).wins += 1;
+      records.get(opponentComboId).losses += 1;
+    } else if (match.winner === "OPPONENT") {
+      records.get(yourComboId).losses += 1;
+      records.get(opponentComboId).wins += 1;
+    } else {
+      records.get(yourComboId).draws += 1;
+      records.get(opponentComboId).draws += 1;
+    }
+
+    records.get(yourComboId).points += match.pointsDelta;
+    records.get(opponentComboId).points -= match.pointsDelta;
+  }
+
+  return [...records.values()]
+    .map((entry) => ({
+      ...entry,
+      total: entry.wins + entry.losses + entry.draws,
+      winRate: entry.wins + entry.losses === 0 ? 0 : entry.wins / (entry.wins + entry.losses)
+    }))
+    .sort((a, b) => b.wins - a.wins || b.points - a.points || b.winRate - a.winRate);
+}
+
+function withRanking(records) {
+  return records.map((entry, index) => ({
+    ...entry,
+    rank: index + 1
+  }));
+}
 
 async function getUserOverview(session) {
   if (session.role === "ADMIN") {
@@ -28,24 +103,48 @@ async function getUserOverview(session) {
     return { users, combos, decks, trainingSessions, tournaments, matches, trainingMatches, latestUsers };
   }
 
-  const [comboCount, deckCount, trainingCount, tournamentCount, matchCount, latestCombos] = await Promise.all([
+  const [comboCount, deckCount, trainingCount, tournamentCount, matchCount, latestCombos, matches, trainingMatches] =
+    await Promise.all([
     prisma.combo.count({ where: { ownerId: session.sub } }),
     prisma.deck.count({ where: { ownerId: session.sub } }),
-    prisma.trainingSession.count({ where: { ownerId: session.sub } }),
-    prisma.tournament.count({ where: { ownerId: session.sub } }),
-    prisma.match.count({
-      where: {
-        tournament: { ownerId: session.sub }
-      }
-    }),
+    prisma.trainingSession.count(),
+    prisma.tournament.count(),
+    prisma.match.count(),
     prisma.combo.findMany({
       where: { ownerId: session.sub },
       orderBy: { createdAt: "desc" },
       take: 5
+    }),
+    prisma.match.findMany({
+      include: {
+        yourCombo: true
+      }
+    }),
+    prisma.trainingMatch.findMany({
+      include: {
+        yourCombo: true,
+        opponentCombo: true
+      }
     })
   ]);
 
-  return { comboCount, deckCount, trainingCount, tournamentCount, matchCount, latestCombos };
+  const teamTournamentRanks = withRanking(buildTournamentComboRecords(matches));
+  const teamTrainingRanks = withRanking(buildTrainingComboRecords(trainingMatches));
+  const userTournamentRanks = teamTournamentRanks.filter((entry) => entry.combo.ownerId === session.sub);
+  const userTrainingRanks = teamTrainingRanks.filter((entry) => entry.combo.ownerId === session.sub);
+
+  return {
+    comboCount,
+    deckCount,
+    trainingCount,
+    tournamentCount,
+    matchCount,
+    latestCombos,
+    userTournamentRanks,
+    teamTournamentRanks: teamTournamentRanks.slice(0, 8),
+    userTrainingRanks,
+    teamTrainingRanks: teamTrainingRanks.slice(0, 8)
+  };
 }
 
 export default async function DashboardPage() {
@@ -158,6 +257,136 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Tournament Combo Ranking</CardTitle>
+                <CardDescription>Your combos ranked within the overall tournament ladder.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {data.userTournamentRanks.length ? (
+                  data.userTournamentRanks.slice(0, 5).map((entry) => (
+                    <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-medium">
+                            #{entry.rank} {entry.combo.name}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                        </div>
+                        <div className="text-right text-sm text-muted-foreground">
+                          <div>{entry.wins}-{entry.losses}-{entry.draws}</div>
+                          <div>{formatPercent(entry.winRate)} win rate</div>
+                          <div>{entry.points > 0 ? `+${entry.points}` : entry.points} pts</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
+                    No tournament ranking yet for your combos.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Team Tournament Ranking</CardTitle>
+                <CardDescription>Top combo ladder across the whole team.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {data.teamTournamentRanks.length ? (
+                  data.teamTournamentRanks.slice(0, 5).map((entry) => (
+                    <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-medium">
+                            #{entry.rank} {entry.combo.name}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                        </div>
+                        <div className="text-right text-sm text-muted-foreground">
+                          <div>{entry.wins}-{entry.losses}-{entry.draws}</div>
+                          <div>{formatPercent(entry.winRate)} win rate</div>
+                          <div>{entry.points > 0 ? `+${entry.points}` : entry.points} pts</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
+                    No tournament ranking data yet.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Training Combo Ranking</CardTitle>
+                <CardDescription>Your combos ranked within the overall training ladder.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {data.userTrainingRanks.length ? (
+                  data.userTrainingRanks.slice(0, 5).map((entry) => (
+                    <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-medium">
+                            #{entry.rank} {entry.combo.name}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                        </div>
+                        <div className="text-right text-sm text-muted-foreground">
+                          <div>{entry.wins}-{entry.losses}-{entry.draws}</div>
+                          <div>{formatPercent(entry.winRate)} win rate</div>
+                          <div>{entry.points > 0 ? `+${entry.points}` : entry.points} pts</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
+                    No training ranking yet for your combos.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Team Training Ranking</CardTitle>
+                <CardDescription>Top internal testing combo ladder across the whole team.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {data.teamTrainingRanks.length ? (
+                  data.teamTrainingRanks.slice(0, 5).map((entry) => (
+                    <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="font-medium">
+                            #{entry.rank} {entry.combo.name}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                        </div>
+                        <div className="text-right text-sm text-muted-foreground">
+                          <div>{entry.wins}-{entry.losses}-{entry.draws}</div>
+                          <div>{formatPercent(entry.winRate)} win rate</div>
+                          <div>{entry.points > 0 ? `+${entry.points}` : entry.points} pts</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
+                    No training ranking data yet.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </>
       )}
     </div>
