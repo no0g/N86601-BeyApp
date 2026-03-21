@@ -60,21 +60,29 @@ function buildTrainingComboRecords(trainingMatches) {
   const records = new Map();
 
   for (const match of trainingMatches) {
-    const comboId = match.yourCombo.id;
+    const yourComboId = match.yourCombo.id;
+    const opponentComboId = match.opponentCombo.id;
 
-    if (!records.has(comboId)) {
-      records.set(comboId, { combo: match.yourCombo, wins: 0, losses: 0, draws: 0, points: 0 });
+    if (!records.has(yourComboId)) {
+      records.set(yourComboId, { combo: match.yourCombo, wins: 0, losses: 0, draws: 0, points: 0 });
+    }
+    if (!records.has(opponentComboId)) {
+      records.set(opponentComboId, { combo: match.opponentCombo, wins: 0, losses: 0, draws: 0, points: 0 });
     }
 
     if (match.winner === "YOUR") {
-      records.get(comboId).wins += 1;
+      records.get(yourComboId).wins += 1;
+      records.get(opponentComboId).losses += 1;
     } else if (match.winner === "OPPONENT") {
-      records.get(comboId).losses += 1;
+      records.get(yourComboId).losses += 1;
+      records.get(opponentComboId).wins += 1;
     } else {
-      records.get(comboId).draws += 1;
+      records.get(yourComboId).draws += 1;
+      records.get(opponentComboId).draws += 1;
     }
 
-    records.get(comboId).points += match.pointsDelta;
+    records.get(yourComboId).points += match.pointsDelta;
+    records.get(opponentComboId).points -= match.pointsDelta;
   }
 
   return [...records.values()]
