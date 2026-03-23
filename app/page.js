@@ -36,13 +36,13 @@ export default async function HomePage() {
         <main className="mx-auto grid max-w-7xl gap-12 px-4 pb-20 pt-4 lg:grid-cols-[1.05fr,0.95fr] lg:items-center">
           <section className="space-y-6">
             <div className="inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.3em] text-slate-300">
-              N86601 Team Beyblade Tool
+              Nexagate Indonesia Beyblade X Team
             </div>
             <h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] text-white sm:text-6xl">
-              Run your Beyblade X club with one shared tool for combos, decks, and tournament tracking.
+              N86601 is a Beyblade X team built by Nexagate Indonesia employees who turn after-hours battles into a serious team craft.
             </h1>
             <p className="max-w-2xl text-base leading-7 text-slate-300">
-              N86601 BeyApp gives your team a clean workflow for testing parts, building legal decks, logging match results, and reviewing performance across the whole club.
+              What started as a shared hobby inside Nexagate Indonesia grew into a tight internal team focused on testing, discipline, matchup study, and the kind of friendly rivalry that makes every launch mean something.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -60,21 +60,21 @@ export default async function HomePage() {
 
             <div className="grid gap-4 pt-4 sm:grid-cols-3">
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <div className="text-sm uppercase tracking-[0.2em] text-sky-300">Build</div>
+                <div className="text-sm uppercase tracking-[0.2em] text-sky-300">Identity</div>
                 <p className="mt-3 text-sm text-slate-300">
-                  Create Beyblade X combos with stat previews from your parts dataset.
+                  N86601 represents a team culture built on precision, preparation, and respect for the game.
                 </p>
               </div>
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <div className="text-sm uppercase tracking-[0.2em] text-rose-300">Deck</div>
+                <div className="text-sm uppercase tracking-[0.2em] text-rose-300">Practice</div>
                 <p className="mt-3 text-sm text-slate-300">
-                  Assemble 3-combo decks with no repeated components across the lineup.
+                  Every combo is tested through repeated sparring, internal matchups, and careful tuning between sessions.
                 </p>
               </div>
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <div className="text-sm uppercase tracking-[0.2em] text-emerald-300">Track</div>
+                <div className="text-sm uppercase tracking-[0.2em] text-emerald-300">Growth</div>
                 <p className="mt-3 text-sm text-slate-300">
-                  Log your combo versus custom opponent combos with Beyblade X finish scoring.
+                  The team treats every result as feedback, using losses, finish types, and matchup data to get better together.
                 </p>
               </div>
             </div>
@@ -101,10 +101,10 @@ export default async function HomePage() {
       <section id="features" className="mx-auto max-w-7xl px-4 pb-20 pt-10 text-slate-900">
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {[
-            ["Admin-controlled access", "Users cannot self-register. The admin creates all accounts and can review club-wide usage."],
-            ["Combo builder", "Preview attack, defense, stamina, Xtreme Dash, and burst resistance before saving a build."],
-            ["Deck validation", "Build legal 3-combo decks while enforcing no repeated blade, ratchet, or bit parts."],
-            ["Tournament analysis", "Track results, finish types, and point deltas for your combo against any opponent combo."]
+            ["Built inside Nexagate Indonesia", "N86601 was formed by Nexagate Indonesia employees who wanted a team identity around Beyblade X, shared improvement, and consistent practice."],
+            ["A team, not just a club", "This is a group that studies parts, compares matchups, and sharpens deck decisions together instead of treating every session like random casual play."],
+            ["Data-backed competition", "Training logs, tournament records, and performance trends help the team understand which combos are reliable, explosive, or difficult to answer."],
+            ["Shared pride in every launch", "N86601 carries the energy of coworkers who compete hard, support each other, and keep building a stronger Beyblade X team session after session."]
           ].map(([title, body]) => (
             <div key={title} className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/60">
               <h2 className="text-xl font-semibold">{title}</h2>
