@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocalDateTime } from "@/components/ui/local-date-time";
+import { PageLoading } from "@/components/ui/page-loading";
 
 const finishTypeLabels = {
   XTREME: "Xtreme Finish",
@@ -152,6 +154,49 @@ function FinishBreakdown({ entry }) {
   );
 }
 
+function WorstMatchupCard({ matchup }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Worst Matchup</CardTitle>
+        <CardDescription>Based on tracked training head-to-head results for this combo.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {matchup ? (
+          <div className="space-y-3">
+            <div>
+              <div className="text-lg font-semibold">{matchup.opponent.name}</div>
+              <div className="text-sm text-muted-foreground">{matchup.opponent.owner?.displayName || "Team combo"}</div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-4">
+              <div className="rounded-2xl bg-muted px-4 py-3 text-sm">
+                <div className="text-muted-foreground">Record</div>
+                <div className="mt-1 font-semibold text-foreground">{matchup.wins}-{matchup.losses}-{matchup.draws}</div>
+              </div>
+              <div className="rounded-2xl bg-muted px-4 py-3 text-sm">
+                <div className="text-muted-foreground">Win rate</div>
+                <div className="mt-1 font-semibold text-foreground">{formatPercent(matchup.winRate)}</div>
+              </div>
+              <div className="rounded-2xl bg-muted px-4 py-3 text-sm">
+                <div className="text-muted-foreground">Point delta</div>
+                <div className="mt-1 font-semibold text-foreground">{formatPoints(matchup.points)}</div>
+              </div>
+              <div className="rounded-2xl bg-muted px-4 py-3 text-sm">
+                <div className="text-muted-foreground">Matches</div>
+                <div className="mt-1 font-semibold text-foreground">{matchup.total}</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
+            No training head-to-head matchup data yet.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function PerformanceBrowser({
   combos,
   performances,
@@ -161,6 +206,8 @@ export function PerformanceBrowser({
   previousPageHref,
   nextPageHref
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [selectedComboId, setSelectedComboId] = useState(initialComboId);
   const selectedCombo = useMemo(
     () => combos.find((combo) => combo.id === selectedComboId) || combos[0],
@@ -168,8 +215,34 @@ export function PerformanceBrowser({
   );
   const performance = performances[selectedCombo.id];
 
+  function navigateToPage(href) {
+    if (!href) {
+      return;
+    }
+
+    startTransition(() => {
+      router.push(href);
+    });
+  }
+
   return (
     <div className="space-y-6">
+      {isPending ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl">
+            <PageLoading
+              title="Loading next performance page..."
+              subtitle="Fetching the next bundle of combos and match history."
+              details={[
+                "The stadium archive is opening the next set of combo records.",
+                "Battle logs are spinning in from the next performance page.",
+                "The analytics crew is unpacking the next batch of Bey results.",
+                "Training and tournament history are syncing for the next lineup."
+              ]}
+            />
+          </div>
+        </div>
+      ) : null}
       <Card>
         <CardHeader>
           <CardTitle>Combo Performance</CardTitle>
@@ -184,16 +257,24 @@ export function PerformanceBrowser({
             </div>
             <div className="flex items-center gap-2">
               {previousPageHref ? (
-                <Link href={previousPageHref} className="rounded-2xl border border-border px-3 py-2 text-sm hover:bg-muted">
+                <button
+                  type="button"
+                  onClick={() => navigateToPage(previousPageHref)}
+                  className="rounded-2xl border border-border px-3 py-2 text-sm hover:bg-muted"
+                >
                   ← Previous
-                </Link>
+                </button>
               ) : (
                 <span className="rounded-2xl border border-border px-3 py-2 text-sm text-muted-foreground">← Previous</span>
               )}
               {nextPageHref ? (
-                <Link href={nextPageHref} className="rounded-2xl border border-border px-3 py-2 text-sm hover:bg-muted">
+                <button
+                  type="button"
+                  onClick={() => navigateToPage(nextPageHref)}
+                  className="rounded-2xl border border-border px-3 py-2 text-sm hover:bg-muted"
+                >
                   Next →
-                </Link>
+                </button>
               ) : (
                 <span className="rounded-2xl border border-border px-3 py-2 text-sm text-muted-foreground">Next →</span>
               )}
@@ -285,6 +366,8 @@ export function PerformanceBrowser({
         <SummaryCard title="Tournament" entry={performance.tournament} />
         <SummaryCard title="Training" entry={performance.training} />
       </section>
+
+      <WorstMatchupCard matchup={performance.worstMatchup} />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>

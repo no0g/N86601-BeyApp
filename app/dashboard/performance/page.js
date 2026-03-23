@@ -82,8 +82,26 @@ export default async function ComboPerformancePage({ searchParams }) {
         ]
       },
       include: {
-        yourCombo: true,
-        opponentCombo: true
+        yourCombo: {
+          include: {
+            owner: {
+              select: {
+                displayName: true,
+                username: true
+              }
+            }
+          }
+        },
+        opponentCombo: {
+          include: {
+            owner: {
+              select: {
+                displayName: true,
+                username: true
+              }
+            }
+          }
+        }
       },
       orderBy: { playedAt: "asc" }
     })

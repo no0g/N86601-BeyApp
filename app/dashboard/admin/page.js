@@ -461,25 +461,25 @@ export default async function AdminPage({ searchParams }) {
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
-                  <div className="rounded-xl bg-rose-50 p-2">
-                    <div className="text-muted-foreground">ATK</div>
-                    <div className="text-sm font-semibold">{combo.attack}</div>
+                  <div className="stat-tile stat-tile--rose">
+                    <div className="stat-tile-label">ATK</div>
+                    <div className="stat-tile-value">{combo.attack}</div>
                   </div>
-                  <div className="rounded-xl bg-sky-50 p-2">
-                    <div className="text-muted-foreground">DEF</div>
-                    <div className="text-sm font-semibold">{combo.defense}</div>
+                  <div className="stat-tile stat-tile--sky">
+                    <div className="stat-tile-label">DEF</div>
+                    <div className="stat-tile-value">{combo.defense}</div>
                   </div>
-                  <div className="rounded-xl bg-emerald-50 p-2">
-                    <div className="text-muted-foreground">STA</div>
-                    <div className="text-sm font-semibold">{combo.stamina}</div>
+                  <div className="stat-tile stat-tile--emerald">
+                    <div className="stat-tile-label">STA</div>
+                    <div className="stat-tile-value">{combo.stamina}</div>
                   </div>
-                  <div className="rounded-xl bg-amber-50 p-2">
-                    <div className="text-muted-foreground">XTR</div>
-                    <div className="text-sm font-semibold">{combo.xtreme}</div>
+                  <div className="stat-tile stat-tile--amber">
+                    <div className="stat-tile-label">XTR</div>
+                    <div className="stat-tile-value">{combo.xtreme}</div>
                   </div>
-                  <div className="rounded-xl bg-cyan-50 p-2">
-                    <div className="text-muted-foreground">BUR</div>
-                    <div className="text-sm font-semibold">{combo.burst}</div>
+                  <div className="stat-tile stat-tile--cyan">
+                    <div className="stat-tile-label">BUR</div>
+                    <div className="stat-tile-value">{combo.burst}</div>
                   </div>
                 </div>
               </div>
