@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireSession } from "@/lib/auth";
-import { comboLabel } from "@/lib/beyblade-data";
+import { comboLabel, getPartById } from "@/lib/beyblade-data";
 import { buildComboPerformance } from "@/lib/performance";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatPercent, isBuildPhase } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+const PAGE_SIZE = 5;
+const BEYBREW_IMAGE_BASE_URL = "https://beybladebrew.com/images";
 
 const finishTypeLabels = {
   XTREME: "Xtreme Finish",
@@ -17,6 +19,10 @@ const finishTypeLabels = {
 
 function formatPoints(value) {
   return value > 0 ? `+${value}` : `${value}`;
+}
+
+function pageHref(comboId, comboPage) {
+  return `/dashboard/performance?comboId=${comboId}&comboPage=${comboPage}`;
 }
 
 function buildPolyline(points, width, height, padding) {
@@ -55,10 +61,42 @@ function PerformanceChart({ timeline }) {
   const tournamentPoints = timeline.map((entry, index) => ({ index, value: entry.tournamentCumulative }));
   const trainingPoints = timeline.map((entry, index) => ({ index, value: entry.trainingCumulative }));
   const combinedPoints = timeline.map((entry, index) => ({ index, value: entry.combinedCumulative }));
+  const latest = timeline[timeline.length - 1];
 
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-3xl border border-border bg-card p-4">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-lg font-semibold">Performance Trend</div>
+            <div className="text-sm text-muted-foreground">
+              Higher lines mean stronger cumulative point performance over time.
+            </div>
+          </div>
+          <div className="grid gap-2 text-sm sm:grid-cols-3">
+            <div className="rounded-2xl bg-muted px-3 py-2">
+              <div className="flex items-center gap-2 font-medium text-foreground">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                Combined line
+              </div>
+              <div className="mt-1 text-muted-foreground">Tournament and training points added together.</div>
+            </div>
+            <div className="rounded-2xl bg-muted px-3 py-2">
+              <div className="flex items-center gap-2 font-medium text-foreground">
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                Tournament line
+              </div>
+              <div className="mt-1 text-muted-foreground">Only official tournament match results.</div>
+            </div>
+            <div className="rounded-2xl bg-muted px-3 py-2">
+              <div className="flex items-center gap-2 font-medium text-foreground">
+                <span className="h-2.5 w-2.5 rounded-full bg-cyan-500" />
+                Training line
+              </div>
+              <div className="mt-1 text-muted-foreground">Only internal practice and sparring results.</div>
+            </div>
+          </div>
+        </div>
         <svg viewBox={`0 0 ${width} ${height}`} className="h-[280px] w-full">
           <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="currentColor" opacity="0.15" />
           <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="currentColor" opacity="0.15" />
@@ -67,14 +105,21 @@ function PerformanceChart({ timeline }) {
           <polyline fill="none" stroke="#06b6d4" strokeWidth="3" points={buildPolyline(trainingPoints, width, height, padding)} />
         </svg>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-        <div>{timeline.length} logged results in timeline</div>
-        <div className="flex flex-wrap gap-4">
-          <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Combined</span>
-          <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> Tournament</span>
-          <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-cyan-500" /> Training</span>
+      <div className="grid gap-3 text-sm text-muted-foreground lg:grid-cols-[1fr,1fr,1fr]">
+        <div className="rounded-2xl border border-border px-4 py-3">
+          <div className="font-medium text-foreground">How to read it</div>
+          <div className="mt-1">Upward movement means the combo gained points. Flat sections mean no net change. Downward movement means losses pulled the score down.</div>
         </div>
-        <div>{formatDate(timeline[0].playedAt)} to {formatDate(timeline[timeline.length - 1].playedAt)}</div>
+        <div className="rounded-2xl border border-border px-4 py-3">
+          <div className="font-medium text-foreground">Current totals</div>
+          <div className="mt-1">
+            Combined {formatPoints(latest.combinedCumulative)} • Tournament {formatPoints(latest.tournamentCumulative)} • Training {formatPoints(latest.trainingCumulative)}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border px-4 py-3">
+          <div className="font-medium text-foreground">Timeline window</div>
+          <div className="mt-1">{timeline.length} logged results from {formatDate(timeline[0].playedAt)} to {formatDate(latest.playedAt)}</div>
+        </div>
       </div>
     </div>
   );
@@ -131,6 +176,12 @@ export default async function ComboPerformancePage({ searchParams }) {
     orderBy: [{ owner: { displayName: "asc" } }, { createdAt: "desc" }]
   });
 
+  const requestedPage = Math.max(1, Number(params?.comboPage || 1) || 1);
+  const totalPages = Math.max(1, Math.ceil(combos.length / PAGE_SIZE));
+  const selectedComboIndex = combos.findIndex((combo) => combo.id === params?.comboId);
+  const derivedPage = selectedComboIndex >= 0 ? Math.floor(selectedComboIndex / PAGE_SIZE) + 1 : 1;
+  const currentPage = Math.min(totalPages, selectedComboIndex >= 0 ? derivedPage : requestedPage);
+  const pagedCombos = combos.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const selectedCombo =
     combos.find((combo) => combo.id === params?.comboId) ||
     combos[0] ||
@@ -172,6 +223,8 @@ export default async function ComboPerformancePage({ searchParams }) {
     tournamentMatches,
     trainingMatches
   });
+  const selectedBlade = getPartById(selectedCombo.bladeId);
+  const bladeImageSrc = selectedBlade?.image ? `${BEYBREW_IMAGE_BASE_URL}/${selectedBlade.image}` : null;
 
   return (
     <div className="space-y-6">
@@ -183,11 +236,38 @@ export default async function ComboPerformancePage({ searchParams }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {combos.map((combo) => (
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm text-muted-foreground">
+              Combo page {currentPage} of {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              {currentPage > 1 ? (
+                <Link
+                  href={pageHref(pagedCombos[0]?.id || selectedCombo.id, currentPage - 1)}
+                  className="rounded-2xl border border-border px-3 py-2 text-sm hover:bg-muted"
+                >
+                  ← Previous
+                </Link>
+              ) : (
+                <span className="rounded-2xl border border-border px-3 py-2 text-sm text-muted-foreground">← Previous</span>
+              )}
+              {currentPage < totalPages ? (
+                <Link
+                  href={pageHref(combos[Math.min(currentPage * PAGE_SIZE, combos.length - 1)]?.id || selectedCombo.id, currentPage + 1)}
+                  className="rounded-2xl border border-border px-3 py-2 text-sm hover:bg-muted"
+                >
+                  Next →
+                </Link>
+              ) : (
+                <span className="rounded-2xl border border-border px-3 py-2 text-sm text-muted-foreground">Next →</span>
+              )}
+            </div>
+          </div>
+          <div className="grid gap-2 md:grid-cols-5">
+            {pagedCombos.map((combo) => (
               <Link
                 key={combo.id}
-                href={`/dashboard/performance?comboId=${combo.id}`}
+                href={pageHref(combo.id, currentPage)}
                 className={`rounded-2xl border px-4 py-2 text-sm ${
                   combo.id === selectedCombo.id ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-border hover:bg-muted"
                 }`}
@@ -198,27 +278,62 @@ export default async function ComboPerformancePage({ searchParams }) {
             ))}
           </div>
           <div className="rounded-3xl border border-border bg-card p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="text-2xl font-semibold">{selectedCombo.name}</div>
-                <div className="mt-1 text-sm text-muted-foreground">{comboLabel(selectedCombo)}</div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {selectedCombo.owner.displayName} @{selectedCombo.owner.username}
+            <div className="grid gap-5 lg:grid-cols-[220px,1fr]">
+              <div className="overflow-hidden rounded-3xl border border-border bg-muted/40 p-4">
+                {bladeImageSrc ? (
+                  <img
+                    src={bladeImageSrc}
+                    alt={selectedBlade?.altname || selectedBlade?.name || selectedCombo.name}
+                    className="h-[190px] w-full object-contain"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="flex h-[190px] items-center justify-center rounded-2xl bg-muted text-sm text-muted-foreground">
+                    No blade image
+                  </div>
+                )}
+                <div className="mt-3">
+                  <div className="text-lg font-semibold">{selectedBlade?.altname || selectedBlade?.name || "Blade"}</div>
+                  <div className="text-sm text-muted-foreground">{selectedBlade?.source || "BeyBrew"}</div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-5">
-                {[
-                  ["ATK", selectedCombo.attack],
-                  ["DEF", selectedCombo.defense],
-                  ["STA", selectedCombo.stamina],
-                  ["XTR", selectedCombo.xtreme],
-                  ["BUR", selectedCombo.burst]
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl bg-muted px-3 py-2">
-                    <div className="text-muted-foreground">{label}</div>
-                    <div className="text-base font-semibold text-foreground">{value}</div>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-2xl font-semibold">{selectedCombo.name}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">{comboLabel(selectedCombo)}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {selectedCombo.owner.displayName} @{selectedCombo.owner.username}
                   </div>
-                ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-5">
+                  {[
+                    ["ATK", selectedCombo.attack],
+                    ["DEF", selectedCombo.defense],
+                    ["STA", selectedCombo.stamina],
+                    ["XTR", selectedCombo.xtreme],
+                    ["BUR", selectedCombo.burst]
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl bg-muted px-3 py-2">
+                      <div className="text-muted-foreground">{label}</div>
+                      <div className="text-base font-semibold text-foreground">{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-muted px-4 py-3 text-sm">
+                    <div className="text-muted-foreground">Selected combo page slot</div>
+                    <div className="mt-1 font-semibold text-foreground">{(selectedComboIndex % PAGE_SIZE) + 1} / {Math.min(PAGE_SIZE, pagedCombos.length)}</div>
+                  </div>
+                  <div className="rounded-2xl bg-muted px-4 py-3 text-sm">
+                    <div className="text-muted-foreground">Blade line</div>
+                    <div className="mt-1 font-semibold text-foreground">{selectedBlade?.line || "Beyblade X"}</div>
+                  </div>
+                  <div className="rounded-2xl bg-muted px-4 py-3 text-sm">
+                    <div className="text-muted-foreground">Spin type</div>
+                    <div className="mt-1 font-semibold text-foreground">{selectedBlade?.spinType || "right"}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
