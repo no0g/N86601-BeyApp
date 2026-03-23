@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { comboLabel, getPartById } from "@/lib/beyblade-data";
+import { buildRankings, buildTournamentComboRecords, buildTrainingComboRecords } from "@/lib/performance";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatPercent, isBuildPhase } from "@/lib/utils";
 
@@ -24,76 +25,22 @@ function opponentComboLabel(match) {
   return `${blade?.altname || blade?.name || "?"} ${ratchet?.altname || ratchet?.name || "?"} ${bit?.altname || bit?.name || "?"}`;
 }
 
-function buildComboRecords(matches) {
-  const records = new Map();
-
-  for (const match of matches) {
-    const comboId = match.yourCombo.id;
-
-    if (!records.has(comboId)) {
-      records.set(comboId, { combo: match.yourCombo, wins: 0, losses: 0, draws: 0, points: 0 });
-    }
-
-    if (match.winner === "YOUR") {
-      records.get(comboId).wins += 1;
-    } else if (match.winner === "OPPONENT") {
-      records.get(comboId).losses += 1;
-    } else {
-      records.get(comboId).draws += 1;
-    }
-
-    records.get(comboId).points += match.pointsDelta;
-  }
-
-  return [...records.values()]
-    .map((entry) => ({
-      ...entry,
-      total: entry.wins + entry.losses + entry.draws,
-      winRate:
-        entry.wins + entry.losses === 0 ? 0 : entry.wins / (entry.wins + entry.losses)
-    }))
-    .sort((a, b) => b.wins - a.wins || b.points - a.points || b.winRate - a.winRate)
-    .slice(0, 8);
+function buildTournamentRankings(matches) {
+  const rankings = buildRankings(buildTournamentComboRecords(matches));
+  return {
+    overall: rankings.overall.slice(0, 8),
+    winRate: rankings.winRate.slice(0, 8),
+    points: rankings.points.slice(0, 8)
+  };
 }
 
-function buildTrainingComboRecords(trainingMatches) {
-  const records = new Map();
-
-  for (const match of trainingMatches) {
-    const yourComboId = match.yourCombo.id;
-    const opponentComboId = match.opponentCombo.id;
-
-    if (!records.has(yourComboId)) {
-      records.set(yourComboId, { combo: match.yourCombo, wins: 0, losses: 0, draws: 0, points: 0 });
-    }
-    if (!records.has(opponentComboId)) {
-      records.set(opponentComboId, { combo: match.opponentCombo, wins: 0, losses: 0, draws: 0, points: 0 });
-    }
-
-    if (match.winner === "YOUR") {
-      records.get(yourComboId).wins += 1;
-      records.get(opponentComboId).losses += 1;
-    } else if (match.winner === "OPPONENT") {
-      records.get(yourComboId).losses += 1;
-      records.get(opponentComboId).wins += 1;
-    } else {
-      records.get(yourComboId).draws += 1;
-      records.get(opponentComboId).draws += 1;
-    }
-
-    records.get(yourComboId).points += match.pointsDelta;
-    records.get(opponentComboId).points -= match.pointsDelta;
-  }
-
-  return [...records.values()]
-    .map((entry) => ({
-      ...entry,
-      total: entry.wins + entry.losses + entry.draws,
-      winRate:
-        entry.wins + entry.losses === 0 ? 0 : entry.wins / (entry.wins + entry.losses)
-    }))
-    .sort((a, b) => b.wins - a.wins || b.points - a.points || b.winRate - a.winRate)
-    .slice(0, 8);
+function buildTrainingRankings(trainingMatches) {
+  const rankings = buildRankings(buildTrainingComboRecords(trainingMatches));
+  return {
+    overall: rankings.overall.slice(0, 8),
+    winRate: rankings.winRate.slice(0, 8),
+    points: rankings.points.slice(0, 8)
+  };
 }
 
 export default async function AdminPage({ searchParams }) {
@@ -213,8 +160,8 @@ export default async function AdminPage({ searchParams }) {
   ]);
 
   const [userCount, comboCount, deckCount, trainingSessionCount, tournamentCount, matchCount, trainingMatchCount] = counts;
-  const topCombos = buildComboRecords(matches);
-  const topTrainingCombos = buildTrainingComboRecords(trainingMatches);
+  const topTournamentCombos = buildTournamentRankings(matches);
+  const topTrainingCombos = buildTrainingRankings(trainingMatches);
 
   return (
     <div className="space-y-6">
@@ -248,7 +195,7 @@ export default async function AdminPage({ searchParams }) {
         ))}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[0.8fr,1fr,1fr]">
+      <div className="grid gap-6 xl:grid-cols-[0.8fr,1fr,1fr,1fr,1fr,1fr,1fr]">
         <Card>
           <CardHeader>
             <CardTitle>Create user</CardTitle>
@@ -275,21 +222,22 @@ export default async function AdminPage({ searchParams }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top combos by match wins</CardTitle>
-            <CardDescription>Cross-user performance snapshot from all logged tournament matches.</CardDescription>
+            <CardTitle>Top tournament combos by overall</CardTitle>
+            <CardDescription>Overall score is total points plus total logged matches.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {topCombos.length ? (
-              topCombos.map((entry) => (
+            {topTournamentCombos.overall.length ? (
+              topTournamentCombos.overall.map((entry) => (
                 <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <div className="font-medium">{entry.combo.name}</div>
+                      <div className="font-medium">#{entry.rank} {entry.combo.name}</div>
                       <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
                     </div>
                     <div className="text-right text-sm">
-                      <div className="font-semibold">{entry.wins} wins</div>
+                      <div className="font-semibold">{entry.overallScore} score</div>
                       <div className="text-muted-foreground">{entry.points} points</div>
+                      <div className="text-muted-foreground">{entry.total} matches</div>
                       <div className="text-muted-foreground">{formatPercent(entry.winRate)} win rate</div>
                     </div>
                   </div>
@@ -305,21 +253,142 @@ export default async function AdminPage({ searchParams }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top training combos</CardTitle>
-            <CardDescription>Cross-user practice ranking from all logged training matches.</CardDescription>
+            <CardTitle>Top tournament combos by win rate</CardTitle>
+            <CardDescription>Higher win rate ranks first, then match count and points.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {topTrainingCombos.length ? (
-              topTrainingCombos.map((entry) => (
+            {topTournamentCombos.winRate.length ? (
+              topTournamentCombos.winRate.map((entry) => (
                 <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <div className="font-medium">{entry.combo.name}</div>
+                      <div className="font-medium">#{entry.rank} {entry.combo.name}</div>
                       <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
                     </div>
                     <div className="text-right text-sm">
-                      <div className="font-semibold">{entry.wins} wins</div>
+                      <div className="font-semibold">{formatPercent(entry.winRate)}</div>
+                      <div className="text-muted-foreground">{entry.wins}-{entry.losses}-{entry.draws}</div>
                       <div className="text-muted-foreground">{entry.points} points</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No tournament history yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top tournament combos by points</CardTitle>
+            <CardDescription>Higher net tournament points rank first, then wins and win rate.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topTournamentCombos.points.length ? (
+              topTournamentCombos.points.map((entry) => (
+                <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-medium">#{entry.rank} {entry.combo.name}</div>
+                      <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div className="font-semibold">{entry.points} points</div>
+                      <div className="text-muted-foreground">{entry.wins}-{entry.losses}-{entry.draws}</div>
+                      <div className="text-muted-foreground">{formatPercent(entry.winRate)} win rate</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No tournament history yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top training combos by overall</CardTitle>
+            <CardDescription>Overall score is total points plus total logged matches.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topTrainingCombos.overall.length ? (
+              topTrainingCombos.overall.map((entry) => (
+                <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-medium">#{entry.rank} {entry.combo.name}</div>
+                      <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div className="font-semibold">{entry.overallScore} score</div>
+                      <div className="text-muted-foreground">{entry.points} points</div>
+                      <div className="text-muted-foreground">{entry.total} matches</div>
+                      <div className="text-muted-foreground">{formatPercent(entry.winRate)} win rate</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No training history yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top training combos by win rate</CardTitle>
+            <CardDescription>Higher win rate ranks first, then match count and points.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topTrainingCombos.winRate.length ? (
+              topTrainingCombos.winRate.map((entry) => (
+                <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-medium">#{entry.rank} {entry.combo.name}</div>
+                      <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div className="font-semibold">{formatPercent(entry.winRate)}</div>
+                      <div className="text-muted-foreground">{entry.wins}-{entry.losses}-{entry.draws}</div>
+                      <div className="text-muted-foreground">{entry.points} points</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No training history yet.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Top training combos by points</CardTitle>
+            <CardDescription>Higher net training points rank first, then wins and win rate.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {topTrainingCombos.points.length ? (
+              topTrainingCombos.points.map((entry) => (
+                <div key={entry.combo.id} className="rounded-2xl border border-border px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-medium">#{entry.rank} {entry.combo.name}</div>
+                      <div className="text-sm text-muted-foreground">{comboLabel(entry.combo)}</div>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div className="font-semibold">{entry.points} points</div>
+                      <div className="text-muted-foreground">{entry.wins}-{entry.losses}-{entry.draws}</div>
                       <div className="text-muted-foreground">{formatPercent(entry.winRate)} win rate</div>
                     </div>
                   </div>

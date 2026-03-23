@@ -12,6 +12,7 @@ import {
   LogOut,
   KeyRound,
   Dumbbell,
+  LineChart,
   Menu,
   X
 } from "lucide-react";
@@ -25,6 +26,7 @@ const baseLinks = [
   { href: "/dashboard/decks", label: "Decks", icon: ShieldCheck },
   { href: "/dashboard/training", label: "Training", icon: Dumbbell },
   { href: "/dashboard/tournaments", label: "Tournaments", icon: Trophy },
+  { href: "/dashboard/performance", label: "Performance", icon: LineChart },
   { href: "/dashboard/settings", label: "Settings", icon: KeyRound }
 ];
 
