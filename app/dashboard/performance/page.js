@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LocalDateTime } from "@/components/ui/local-date-time";
 import { requireSession } from "@/lib/auth";
 import { comboLabel, getPartById } from "@/lib/beyblade-data";
 import { buildComboPerformance } from "@/lib/performance";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatPercent, isBuildPhase } from "@/lib/utils";
+import { formatPercent, isBuildPhase } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 5;
@@ -118,7 +119,11 @@ function PerformanceChart({ timeline }) {
         </div>
         <div className="rounded-2xl border border-border px-4 py-3">
           <div className="font-medium text-foreground">Timeline window</div>
-          <div className="mt-1">{timeline.length} logged results from {formatDate(timeline[0].playedAt)} to {formatDate(latest.playedAt)}</div>
+          <div className="mt-1">
+            {timeline.length} logged results from{" "}
+            <LocalDateTime value={timeline[0].playedAt} /> to{" "}
+            <LocalDateTime value={latest.playedAt} />
+          </div>
         </div>
       </div>
     </div>
@@ -381,7 +386,9 @@ export default async function ComboPerformancePage({ searchParams }) {
               <div key={`${entry.mode}-${entry.id}`} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border px-4 py-3 text-sm">
                 <div>
                   <div className="font-medium">{entry.mode === "TOURNAMENT" ? "Tournament" : "Training"} vs {entry.label}</div>
-                  <div className="text-muted-foreground">{finishTypeLabels[entry.finishType]} • {formatDate(entry.playedAt)}</div>
+                  <div className="text-muted-foreground">
+                    {finishTypeLabels[entry.finishType]} • <LocalDateTime value={entry.playedAt} />
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="font-semibold">{entry.result}</div>

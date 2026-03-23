@@ -2,12 +2,13 @@ import { createUserAction } from "@/app/actions/users";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocalDateTime } from "@/components/ui/local-date-time";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { requireAdmin } from "@/lib/auth";
 import { comboLabel, getPartById } from "@/lib/beyblade-data";
 import { buildRankings, buildTournamentComboRecords, buildTrainingComboRecords } from "@/lib/performance";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatPercent, isBuildPhase } from "@/lib/utils";
+import { formatPercent, isBuildPhase } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -507,7 +508,7 @@ export default async function AdminPage({ searchParams }) {
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
                     <div>@{deck.owner.username}</div>
-                    <div>{formatDate(deck.createdAt)}</div>
+                    <LocalDateTime value={deck.createdAt} />
                   </div>
                 </div>
                 <div className="mt-4 space-y-3">
@@ -549,7 +550,7 @@ export default async function AdminPage({ searchParams }) {
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
                     <div>{tournament.matches.length} matches</div>
-                    <div>{formatDate(tournament.createdAt)}</div>
+                    <LocalDateTime value={tournament.createdAt} />
                   </div>
                 </div>
 
@@ -561,7 +562,7 @@ export default async function AdminPage({ searchParams }) {
                           <div className="text-sm font-medium">
                             {match.yourCombo.name} vs {match.opponentComboName}
                           </div>
-                          <div className="text-xs text-muted-foreground">{formatDate(match.playedAt)}</div>
+                          <LocalDateTime value={match.playedAt} className="text-xs text-muted-foreground" />
                         </div>
                         <div className="mt-2 text-sm text-muted-foreground">
                           {comboLabel(match.yourCombo)} vs {opponentComboLabel(match)}
@@ -615,7 +616,7 @@ export default async function AdminPage({ searchParams }) {
                   </div>
                   <div className="text-right text-sm text-muted-foreground">
                     <div>{trainingSession.matches.length} matches</div>
-                    <div>{formatDate(trainingSession.createdAt)}</div>
+                    <LocalDateTime value={trainingSession.createdAt} />
                   </div>
                 </div>
 
@@ -627,7 +628,7 @@ export default async function AdminPage({ searchParams }) {
                           <div className="text-sm font-medium">
                             {match.yourCombo.name} vs {match.opponentCombo.name}
                           </div>
-                          <div className="text-xs text-muted-foreground">{formatDate(match.playedAt)}</div>
+                          <LocalDateTime value={match.playedAt} className="text-xs text-muted-foreground" />
                         </div>
                         <div className="mt-2 text-sm text-muted-foreground">
                           {comboLabel(match.yourCombo)} vs {comboLabel(match.opponentCombo)}

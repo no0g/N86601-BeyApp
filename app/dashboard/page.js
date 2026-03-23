@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LocalDateTime } from "@/components/ui/local-date-time";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { comboLabel } from "@/lib/beyblade-data";
 import { buildRankings, buildTournamentComboRecords, buildTrainingComboRecords } from "@/lib/performance";
-import { formatDate, formatPercent, isBuildPhase } from "@/lib/utils";
+import { formatPercent, isBuildPhase } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -193,7 +194,7 @@ export default async function DashboardPage() {
                     <div className="font-medium">{user.displayName}</div>
                     <div className="text-sm text-muted-foreground">@{user.username}</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">{formatDate(user.createdAt)}</div>
+                  <LocalDateTime value={user.createdAt} className="text-sm text-muted-foreground" />
                 </div>
               ))}
               <div className="flex flex-wrap gap-4 text-sm font-medium text-emerald-700 dark:text-emerald-300">
@@ -239,7 +240,7 @@ export default async function DashboardPage() {
                         {comboLabel(combo)}
                       </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">{formatDate(combo.createdAt)}</div>
+                    <LocalDateTime value={combo.createdAt} className="text-sm text-muted-foreground" />
                   </div>
                 ))
               ) : (

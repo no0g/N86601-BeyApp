@@ -8,13 +8,14 @@ import {
 } from "@/app/actions/training";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { LocalDateTime } from "@/components/ui/local-date-time";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { requireSession } from "@/lib/auth";
 import { comboLabel } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
-import { formatDate, isBuildPhase } from "@/lib/utils";
+import { isBuildPhase } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -240,7 +241,7 @@ export default async function TrainingPage({ searchParams }) {
                           <div className="text-sm font-medium">
                             {match.yourCombo.name} vs {match.opponentCombo.name}
                           </div>
-                          <div className="text-xs text-muted-foreground">{formatDate(match.playedAt)}</div>
+                          <LocalDateTime value={match.playedAt} className="text-xs text-muted-foreground" />
                         </div>
                         <div className="mt-2 text-sm text-muted-foreground">
                           {comboLabel(match.yourCombo)} vs {comboLabel(match.opponentCombo)}
