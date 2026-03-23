@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 
+const APP_TIME_ZONE = "Asia/Jakarta";
+
 function formatInBrowserTimezone(value) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
-    timeStyle: "short"
+    timeStyle: "short",
+    timeZone: APP_TIME_ZONE
   }).format(new Date(value));
 }
 
