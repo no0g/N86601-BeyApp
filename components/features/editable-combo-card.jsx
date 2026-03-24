@@ -45,6 +45,42 @@ function StatBar({ label, value, tone, max }) {
   );
 }
 
+function WeightSummary({ stats, dark = false }) {
+  const panelClass = dark
+    ? "rounded-2xl border border-white/10 bg-white/5 p-4"
+    : "rounded-2xl border border-border bg-muted/40 p-4";
+  const labelClass = dark ? "text-slate-400" : "text-muted-foreground";
+  const valueClass = dark ? "text-white" : "text-foreground";
+  const subClass = dark ? "text-slate-300" : "text-muted-foreground";
+
+  return (
+    <div className={panelClass}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className={`text-xs uppercase tracking-[0.2em] ${labelClass}`}>Weight</div>
+          <div className={`mt-2 text-xl font-semibold ${valueClass}`}>{stats.weight.toFixed(1)}g</div>
+        </div>
+        <div className={`text-right text-xs ${subClass}`}>
+          <div>Blade {stats.weightDetails.blade?.toFixed(1) ?? "?"}g</div>
+          <div>Ratchet {stats.weightDetails.ratchet?.toFixed(1) ?? "?"}g</div>
+          <div>Bit {stats.weightDetails.bit?.toFixed(1) ?? "?"}g</div>
+        </div>
+      </div>
+      {stats.weightWarning ? (
+        <div
+          className={
+            dark
+              ? "mt-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
+              : "mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+          }
+        >
+          Warning: {stats.weightWarning}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function EditableComboCard({ combo }) {
   const [name, setName] = useState(combo.name);
   const [bladeId, setBladeId] = useState(combo.bladeId);
@@ -91,6 +127,9 @@ export function EditableComboCard({ combo }) {
 
       <div className="mt-4">
         <ComboPartsShowcase blade={parts[0]} ratchet={parts[1]} bit={parts[2]} tiny />
+      </div>
+      <div className="mt-4">
+        <WeightSummary stats={stats} />
       </div>
 
       <details className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
@@ -180,6 +219,9 @@ export function EditableComboCard({ combo }) {
               <div className="mt-3">
                 <ComboPartsShowcase blade={parts[0]} ratchet={parts[1]} bit={parts[2]} dark />
               </div>
+            </div>
+            <div className="mt-5">
+              <WeightSummary stats={stats} dark />
             </div>
             <div className="mt-5 space-y-4">
               <StatBar label="Attack" value={stats.attack} max={STAT_CAPS.attack} tone="red" />

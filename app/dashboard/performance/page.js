@@ -122,6 +122,8 @@ export default async function ComboPerformancePage({ searchParams }) {
 
   const preparedCombos = combos.map((combo) => {
     const blade = getPartById(combo.bladeId);
+    const ratchet = getPartById(combo.ratchetId);
+    const bit = getPartById(combo.bitId);
 
     return {
       ...combo,
@@ -130,7 +132,16 @@ export default async function ComboPerformancePage({ searchParams }) {
       bladeSource: blade?.source || "BeyBrew",
       bladeLine: blade?.line || "Beyblade X",
       bladeSpinType: blade?.spinType || "right",
-      bladeImageSrc: blade?.image ? `${BEYBREW_IMAGE_BASE_URL}/${blade.image}` : null
+      bladeImageSrc: blade?.image ? `${BEYBREW_IMAGE_BASE_URL}/${blade.image}` : null,
+      weight: Number((((blade?.weight || 0) + (ratchet?.weight || 0) + (bit?.weight || 0))).toFixed(1)),
+      weightDetails: {
+        blade: blade?.weight ?? null,
+        ratchet: ratchet?.weight ?? null,
+        bit: bit?.weight ?? null
+      },
+      weightWarning: ratchet?.weightEstimated
+        ? `Ratchet weight for ${ratchet.altname || ratchet.name} is using the 7g team average estimate.`
+        : null
     };
   });
 

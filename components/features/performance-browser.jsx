@@ -353,6 +353,24 @@ export function PerformanceBrowser({
                     <div className="mt-1 font-semibold text-foreground">{selectedCombo.bladeSpinType}</div>
                   </div>
                 </div>
+                <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-muted-foreground">Weight</div>
+                      <div className="mt-1 text-lg font-semibold text-foreground">{selectedCombo.weight.toFixed(1)}g</div>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground">
+                      <div>Blade {selectedCombo.weightDetails.blade?.toFixed(1) ?? "?"}g</div>
+                      <div>Ratchet {selectedCombo.weightDetails.ratchet?.toFixed(1) ?? "?"}g</div>
+                      <div>Bit {selectedCombo.weightDetails.bit?.toFixed(1) ?? "?"}g</div>
+                    </div>
+                  </div>
+                  {selectedCombo.weightWarning ? (
+                    <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100">
+                      Warning: {selectedCombo.weightWarning}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

@@ -4,7 +4,7 @@ import { EditableComboCard } from "@/components/features/editable-combo-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComboPartsShowcase } from "@/components/ui/combo-parts-showcase";
 import { requireSession } from "@/lib/auth";
-import { comboLabel, getPartById } from "@/lib/beyblade-data";
+import { comboLabel, computeComboStats, getPartById } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
 import { isBuildPhase } from "@/lib/utils";
 
@@ -12,6 +12,29 @@ export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 5;
 const TEAM_PAGE_SIZE = 4;
+
+function WeightReadout({ stats }) {
+  return (
+    <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-muted-foreground">Weight</div>
+          <div className="mt-1 text-lg font-semibold text-foreground">{stats.weight.toFixed(1)}g</div>
+        </div>
+        <div className="text-right text-xs text-muted-foreground">
+          <div>Blade {stats.weightDetails.blade?.toFixed(1) ?? "?"}g</div>
+          <div>Ratchet {stats.weightDetails.ratchet?.toFixed(1) ?? "?"}g</div>
+          <div>Bit {stats.weightDetails.bit?.toFixed(1) ?? "?"}g</div>
+        </div>
+      </div>
+      {stats.weightWarning ? (
+        <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100">
+          Warning: {stats.weightWarning}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default async function CombosPage({ searchParams }) {
   if (isBuildPhase) {
@@ -146,7 +169,10 @@ export default async function CombosPage({ searchParams }) {
             <CardContent className="space-y-4">
               {teamCombos.length ? (
                 <div className="grid gap-4 md:grid-cols-2">
-                  {teamCombos.map((combo) => (
+                  {teamCombos.map((combo) => {
+                    const stats = computeComboStats(combo.bladeId, combo.ratchetId, combo.bitId);
+
+                    return (
                     <div key={combo.id} className="rounded-2xl border border-border p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -165,6 +191,9 @@ export default async function CombosPage({ searchParams }) {
                           bit={getPartById(combo.bitId)}
                           tiny
                         />
+                      </div>
+                      <div className="mt-4">
+                        <WeightReadout stats={stats} />
                       </div>
                       <div className="mt-4 grid grid-cols-5 gap-2 text-center text-xs">
                         <div className="stat-tile stat-tile--rose">
@@ -189,7 +218,8 @@ export default async function CombosPage({ searchParams }) {
                         </div>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
