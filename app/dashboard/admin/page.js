@@ -177,7 +177,7 @@ export default async function AdminPage({ searchParams }) {
         </div>
       ) : null}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           ["Users", userCount],
           ["Combos", comboCount],
@@ -196,7 +196,7 @@ export default async function AdminPage({ searchParams }) {
         ))}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[0.8fr,1fr,1fr,1fr,1fr,1fr,1fr]">
+      <div className="grid gap-6 xl:grid-cols-3 2xl:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle>Create user</CardTitle>
