@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComboPartsShowcase } from "@/components/ui/combo-parts-showcase";
+import { MetaRecommendations } from "@/components/features/meta-recommendations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -59,9 +60,16 @@ function WeightPanel({ stats }) {
           <div>Bit {stats.weightDetails.bit?.toFixed(1) ?? "?"}g</div>
         </div>
       </div>
-      {stats.weightWarning ? (
-        <div className="mt-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-          Warning: {stats.weightWarning}
+      {stats.weightWarnings?.length ? (
+        <div className="mt-3 space-y-2">
+          {stats.weightWarnings.map((warning) => (
+            <div
+              key={warning}
+              className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
+            >
+              Warning: {warning}
+            </div>
+          ))}
         </div>
       ) : null}
     </div>
@@ -156,6 +164,7 @@ export function ComboBuilderForm({ action }) {
               <ComboPartsShowcase blade={parts[0]} ratchet={parts[1]} bit={parts[2]} dark />
             </div>
           </div>
+          <MetaRecommendations bladeId={bladeId} ratchetId={ratchetId} bitId={bitId} dark />
           <WeightPanel stats={stats} />
           <StatBar label="Attack" value={stats.attack} max={STAT_CAPS.attack} tone="red" />
           <StatBar label="Defense" value={stats.defense} max={STAT_CAPS.defense} tone="blue" />

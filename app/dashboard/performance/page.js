@@ -1,7 +1,7 @@
 import { PerformanceBrowser } from "@/components/features/performance-browser";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireSession } from "@/lib/auth";
-import { comboLabel, getPartById } from "@/lib/beyblade-data";
+import { comboLabel, computeComboStats, getPartById } from "@/lib/beyblade-data";
 import { buildComboPerformance } from "@/lib/performance";
 import { prisma } from "@/lib/prisma";
 import { isBuildPhase } from "@/lib/utils";
@@ -122,8 +122,7 @@ export default async function ComboPerformancePage({ searchParams }) {
 
   const preparedCombos = combos.map((combo) => {
     const blade = getPartById(combo.bladeId);
-    const ratchet = getPartById(combo.ratchetId);
-    const bit = getPartById(combo.bitId);
+    const comboStats = computeComboStats(combo.bladeId, combo.ratchetId, combo.bitId);
 
     return {
       ...combo,
@@ -133,15 +132,9 @@ export default async function ComboPerformancePage({ searchParams }) {
       bladeLine: blade?.line || "Beyblade X",
       bladeSpinType: blade?.spinType || "right",
       bladeImageSrc: blade?.image ? `${BEYBREW_IMAGE_BASE_URL}/${blade.image}` : null,
-      weight: Number((((blade?.weight || 0) + (ratchet?.weight || 0) + (bit?.weight || 0))).toFixed(1)),
-      weightDetails: {
-        blade: blade?.weight ?? null,
-        ratchet: ratchet?.weight ?? null,
-        bit: bit?.weight ?? null
-      },
-      weightWarning: ratchet?.weightEstimated
-        ? `Ratchet weight for ${ratchet.altname || ratchet.name} is using the 7g team average estimate.`
-        : null
+      weight: comboStats.weight,
+      weightDetails: comboStats.weightDetails,
+      weightWarnings: comboStats.weightWarnings
     };
   });
 

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { deleteComboAction, updateComboAction } from "@/app/actions/combos";
+import { MetaRecommendations } from "@/components/features/meta-recommendations";
 import { ComboPartsShowcase } from "@/components/ui/combo-parts-showcase";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,15 +67,20 @@ function WeightSummary({ stats, dark = false }) {
           <div>Bit {stats.weightDetails.bit?.toFixed(1) ?? "?"}g</div>
         </div>
       </div>
-      {stats.weightWarning ? (
-        <div
-          className={
-            dark
-              ? "mt-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
-              : "mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800"
-          }
-        >
-          Warning: {stats.weightWarning}
+      {stats.weightWarnings?.length ? (
+        <div className="mt-3 space-y-2">
+          {stats.weightWarnings.map((warning) => (
+            <div
+              key={warning}
+              className={
+                dark
+                  ? "rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
+                  : "rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+              }
+            >
+              Warning: {warning}
+            </div>
+          ))}
         </div>
       ) : null}
     </div>
@@ -219,6 +225,9 @@ export function EditableComboCard({ combo }) {
               <div className="mt-3">
                 <ComboPartsShowcase blade={parts[0]} ratchet={parts[1]} bit={parts[2]} dark />
               </div>
+            </div>
+            <div className="mt-5">
+              <MetaRecommendations bladeId={bladeId} ratchetId={ratchetId} bitId={bitId} dark />
             </div>
             <div className="mt-5">
               <WeightSummary stats={stats} dark />
