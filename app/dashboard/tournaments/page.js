@@ -42,7 +42,7 @@ export default async function TournamentsPage({ searchParams }) {
     return null;
   }
 
-  await requireSession();
+  const session = await requireSession();
   const params = await searchParams;
 
   const [combos, tournaments] = await Promise.all([
@@ -251,15 +251,17 @@ export default async function TournamentsPage({ searchParams }) {
                     </div>
                     <div className="flex flex-wrap items-end gap-3">
                       <SubmitButton pendingLabel="Updating tournament...">Save changes</SubmitButton>
-                      <button
-                        type="submit"
-                        formAction={deleteTournamentAction}
-                        name="tournamentId"
-                        value={tournament.id}
-                        className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
-                      >
-                        Delete tournament
-                      </button>
+                      {session.role === "ADMIN" || session.sub === tournament.owner.id ? (
+                        <button
+                          type="submit"
+                          formAction={deleteTournamentAction}
+                          name="tournamentId"
+                          value={tournament.id}
+                          className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
+                        >
+                          Delete tournament
+                        </button>
+                      ) : null}
                     </div>
                   </form>
                 </details>
@@ -375,15 +377,17 @@ export default async function TournamentsPage({ searchParams }) {
                             </div>
                             <div className="flex flex-wrap gap-3 md:col-span-2">
                               <SubmitButton pendingLabel="Updating log...">Save changes</SubmitButton>
-                              <button
-                                type="submit"
-                                formAction={deleteMatchAction}
-                                name="matchId"
-                                value={match.id}
-                                className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
-                              >
-                                Delete log
-                              </button>
+                              {session.role === "ADMIN" || session.sub === tournament.owner.id ? (
+                                <button
+                                  type="submit"
+                                  formAction={deleteMatchAction}
+                                  name="matchId"
+                                  value={match.id}
+                                  className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
+                                >
+                                  Delete log
+                                </button>
+                              ) : null}
                             </div>
                           </form>
                         </details>

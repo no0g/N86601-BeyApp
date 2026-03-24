@@ -12,6 +12,10 @@ const FINISH_POINTS = {
   SPIN: 1
 };
 
+function canDeleteOwnedRecord(session, ownerId) {
+  return session.role === "ADMIN" || session.sub === ownerId;
+}
+
 async function validateTrainingMatch(tx, session, data, ignoreMatchId) {
   if (data.yourComboId === data.opponentComboId) {
     return "Select two different combos for training";
@@ -199,11 +203,22 @@ export async function deleteTrainingSessionAction(formData) {
     const trainingSession = await tx.trainingSession.findFirst({
       where: {
         id: trainingSessionId
+      },
+      include: {
+        owner: {
+          select: {
+            id: true
+          }
+        }
       }
     });
 
     if (!trainingSession) {
       return "Training session not found";
+    }
+
+    if (!canDeleteOwnedRecord(session, trainingSession.owner.id)) {
+      return "Only the training owner or admin can delete this session";
     }
 
     await tx.trainingSession.delete({
@@ -277,11 +292,26 @@ export async function deleteTrainingMatchAction(formData) {
     const trainingMatch = await tx.trainingMatch.findFirst({
       where: {
         id: trainingMatchId
+      },
+      include: {
+        trainingSession: {
+          include: {
+            owner: {
+              select: {
+                id: true
+              }
+            }
+          }
+        }
       }
     });
 
     if (!trainingMatch) {
       return "Training match not found";
+    }
+
+    if (!canDeleteOwnedRecord(session, trainingMatch.trainingSession.owner.id)) {
+      return "Only the training owner or admin can delete this log";
     }
 
     await tx.trainingMatch.delete({

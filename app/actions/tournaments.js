@@ -41,6 +41,10 @@ async function findTournament(tx, tournamentId) {
   });
 }
 
+function canDeleteOwnedRecord(session, ownerId) {
+  return session.role === "ADMIN" || session.sub === ownerId;
+}
+
 async function findSelectableCombo(tx, comboId) {
   return tx.combo.findFirst({
     where: { id: comboId }
@@ -180,6 +184,10 @@ export async function deleteTournamentAction(formData) {
       return "Tournament not found";
     }
 
+    if (!canDeleteOwnedRecord(session, tournament.owner.id)) {
+      return "Only the tournament owner or admin can delete this tournament";
+    }
+
     await tx.tournament.delete({
       where: { id: tournamentId }
     });
@@ -288,11 +296,26 @@ export async function deleteMatchAction(formData) {
     const match = await tx.match.findFirst({
       where: {
         id: matchId
+      },
+      include: {
+        tournament: {
+          include: {
+            owner: {
+              select: {
+                id: true
+              }
+            }
+          }
+        }
       }
     });
 
     if (!match) {
       return "Match not found";
+    }
+
+    if (!canDeleteOwnedRecord(session, match.tournament.owner.id)) {
+      return "Only the tournament owner or admin can delete this log";
     }
 
     await tx.match.delete({
