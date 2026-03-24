@@ -151,9 +151,8 @@ export default async function TournamentsPage({ searchParams }) {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="opponentComboName">Opponent combo name</Label>
-                  <Input id="opponentComboName" name="opponentComboName" placeholder="Phoenix Wing 9-60GF" required />
+                <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground md:col-span-2">
+                  Opponent combo name will be generated automatically from the selected blade, ratchet, and bit.
                 </div>
 
                 <div className="space-y-2">
@@ -319,9 +318,8 @@ export default async function TournamentsPage({ searchParams }) {
                                 ))}
                               </Select>
                             </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`opponent-name-${match.id}`}>Opponent combo name</Label>
-                              <Input id={`opponent-name-${match.id}`} name="opponentComboName" defaultValue={match.opponentComboName} required />
+                            <div className="rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground md:col-span-2">
+                              Opponent combo name will be generated automatically from the selected blade, ratchet, and bit.
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor={`opponent-blade-${match.id}`}>Opponent blade</Label>

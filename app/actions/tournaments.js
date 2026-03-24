@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
-import { computeComboStats } from "@/lib/beyblade-data";
+import { comboLabel, computeComboStats, getPartById } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
 import { matchSchema, tournamentSchema } from "@/lib/validators";
 
@@ -16,6 +16,14 @@ const FINISH_POINTS = {
 function getPointsDelta(winner, finishType) {
   const finishPoints = FINISH_POINTS[finishType];
   return winner === "YOUR" ? finishPoints : winner === "OPPONENT" ? -finishPoints : 0;
+}
+
+function buildOpponentComboName({ opponentBladeId, opponentRatchetId, opponentBitId }) {
+  return comboLabel({
+    bladeId: opponentBladeId,
+    ratchetId: opponentRatchetId,
+    bitId: opponentBitId
+  });
 }
 
 async function findTournament(tx, tournamentId) {
@@ -60,6 +68,14 @@ async function validateTournamentMatch(tx, session, data, matchId) {
 
   if (!tournament || !yourCombo || !existingMatch) {
     return "Tournament or your combo selection is invalid";
+  }
+
+  const opponentBlade = getPartById(data.opponentBladeId);
+  const opponentRatchet = getPartById(data.opponentRatchetId);
+  const opponentBit = getPartById(data.opponentBitId);
+
+  if (!opponentBlade || !opponentRatchet || !opponentBit) {
+    return "Opponent combo selection is invalid";
   }
 
   return null;
@@ -183,7 +199,6 @@ export async function createMatchAction(formData) {
   const parsed = matchSchema.safeParse({
     tournamentId: formData.get("tournamentId"),
     yourComboId: formData.get("yourComboId"),
-    opponentComboName: formData.get("opponentComboName"),
     opponentBladeId: formData.get("opponentBladeId"),
     opponentRatchetId: formData.get("opponentRatchetId"),
     opponentBitId: formData.get("opponentBitId"),
@@ -204,6 +219,7 @@ export async function createMatchAction(formData) {
     await tx.match.create({
       data: {
         ...parsed.data,
+        opponentComboName: buildOpponentComboName(parsed.data),
         pointsDelta: getPointsDelta(parsed.data.winner, parsed.data.finishType)
       }
     });
@@ -224,7 +240,6 @@ export async function updateMatchAction(formData) {
   const parsed = matchSchema.safeParse({
     tournamentId: formData.get("tournamentId"),
     yourComboId: formData.get("yourComboId"),
-    opponentComboName: formData.get("opponentComboName"),
     opponentBladeId: formData.get("opponentBladeId"),
     opponentRatchetId: formData.get("opponentRatchetId"),
     opponentBitId: formData.get("opponentBitId"),
@@ -246,6 +261,7 @@ export async function updateMatchAction(formData) {
       where: { id: matchId },
       data: {
         ...parsed.data,
+        opponentComboName: buildOpponentComboName(parsed.data),
         pointsDelta: getPointsDelta(parsed.data.winner, parsed.data.finishType)
       }
     });
