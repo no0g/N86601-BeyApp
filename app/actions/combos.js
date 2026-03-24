@@ -6,6 +6,16 @@ import { computeComboStats } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
 import { comboSchema } from "@/lib/validators";
 
+function comboDbStats(stats) {
+  return {
+    attack: stats.attack,
+    defense: stats.defense,
+    stamina: stats.stamina,
+    xtreme: stats.xtreme,
+    burst: stats.burst
+  };
+}
+
 export async function createComboAction(formData) {
   const session = await requireSession();
 
@@ -44,7 +54,7 @@ export async function createComboAction(formData) {
   await prisma.combo.create({
     data: {
       ...parsed.data,
-      ...stats,
+      ...comboDbStats(stats),
       ownerId: session.sub
     }
   });
@@ -127,7 +137,7 @@ export async function updateComboAction(formData) {
     where: { id: comboId },
     data: {
       ...parsed.data,
-      ...stats
+      ...comboDbStats(stats)
     }
   });
 
