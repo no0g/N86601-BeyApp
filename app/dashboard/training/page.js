@@ -6,7 +6,7 @@ import {
   updateTrainingMatchAction,
   updateTrainingSessionAction
 } from "@/app/actions/training";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { Input } from "@/components/ui/input";
 import { LocalDateTime } from "@/components/ui/local-date-time";
 import { Label } from "@/components/ui/label";
@@ -105,12 +105,10 @@ export default async function TrainingPage({ searchParams }) {
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr,1.1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Create training session</CardTitle>
-            <CardDescription>Create a shared internal practice session visible to the whole team.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <CollapsibleSection
+          title="Create training session"
+          description="Create a shared internal practice session visible to the whole team."
+        >
             <form action={createTrainingSessionAction} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Training session name</Label>
@@ -118,15 +116,12 @@ export default async function TrainingPage({ searchParams }) {
               </div>
               <SubmitButton pendingLabel="Creating...">Create training session</SubmitButton>
             </form>
-          </CardContent>
-        </Card>
+        </CollapsibleSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Log training match</CardTitle>
-            <CardDescription>Everyone can log or update shared training records using any saved team combo.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <CollapsibleSection
+          title="Log training match"
+          description="Everyone can log or update shared training records using any saved team combo."
+        >
             {teamCombos.length < 2 || trainingSessions.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
                 Create at least one training session and save at least two combos before logging internal matches.
@@ -188,27 +183,29 @@ export default async function TrainingPage({ searchParams }) {
                 </div>
               </form>
             )}
-          </CardContent>
-        </Card>
+        </CollapsibleSection>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All training sessions</CardTitle>
-          <CardDescription>Shared team practice logs. Any user can update these records.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <CollapsibleSection
+        title="All training sessions"
+        description="Shared team practice logs. Any user can update these records."
+        defaultOpen={false}
+        contentClassName="space-y-4"
+      >
           {trainingSessions.length ? (
             trainingSessions.map((trainingSession) => (
-              <div key={trainingSession.id} className="rounded-2xl border border-border p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className="font-semibold">{trainingSession.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Owner: {trainingSession.owner.displayName} (@{trainingSession.owner.username}) | {trainingSession.matches.length} matches logged
+              <details key={trainingSession.id} className="rounded-2xl border border-border p-4">
+                <summary className="cursor-pointer list-none">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-semibold">{trainingSession.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Owner: {trainingSession.owner.displayName} (@{trainingSession.owner.username}) | {trainingSession.matches.length} matches logged
+                      </div>
                     </div>
+                    <span className="text-sm text-muted-foreground">Open</span>
                   </div>
-                </div>
+                </summary>
                 <details className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
                   <summary className="cursor-pointer text-sm font-medium">Edit or delete training session</summary>
                   <form action={updateTrainingSessionAction} className="mt-4 flex flex-wrap gap-3">
@@ -241,13 +238,15 @@ export default async function TrainingPage({ searchParams }) {
                 <div className="mt-4 space-y-3">
                   {trainingSession.matches.length ? (
                     trainingSession.matches.map((match) => (
-                      <div key={match.id} className="rounded-xl bg-muted/50 p-4">
+                      <details key={match.id} className="rounded-xl bg-muted/50 p-4">
+                        <summary className="cursor-pointer list-none">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="text-sm font-medium">
                             {match.yourCombo.name} vs {match.opponentCombo.name}
                           </div>
                           <LocalDateTime value={match.playedAt} className="text-xs text-muted-foreground" />
                         </div>
+                        </summary>
                         <div className="mt-2 text-sm text-muted-foreground">
                           {comboLabel(match.yourCombo)} vs {comboLabel(match.opponentCombo)}
                         </div>
@@ -348,7 +347,7 @@ export default async function TrainingPage({ searchParams }) {
                             </div>
                           </form>
                         </details>
-                      </div>
+                      </details>
                     ))
                   ) : (
                     <div className="rounded-xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
@@ -356,15 +355,14 @@ export default async function TrainingPage({ searchParams }) {
                     </div>
                   )}
                 </div>
-              </div>
+              </details>
             ))
           ) : (
             <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
               No training sessions created yet.
             </div>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleSection>
     </div>
   );
 }

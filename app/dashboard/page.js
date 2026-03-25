@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { LocalDateTime } from "@/components/ui/local-date-time";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
@@ -182,12 +183,12 @@ export default async function DashboardPage() {
             ))}
           </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Latest users</CardTitle>
-              <CardDescription>Newly created players and admin shortcuts.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <CollapsibleSection
+            title="Latest users"
+            description="Newly created players and admin shortcuts."
+            defaultOpen={false}
+            contentClassName="space-y-3"
+          >
               {data.latestUsers.map((user) => (
                 <div key={user.id} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3">
                   <div>
@@ -203,8 +204,7 @@ export default async function DashboardPage() {
                 <Link href="/dashboard/tournaments">Open tournaments</Link>
                 <Link href="/dashboard/performance">Open performance</Link>
               </div>
-            </CardContent>
-          </Card>
+          </CollapsibleSection>
         </>
       ) : (
         <>
@@ -225,12 +225,12 @@ export default async function DashboardPage() {
             ))}
           </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent combos</CardTitle>
-              <CardDescription>Your latest saved builds.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <CollapsibleSection
+            title="Recent combos"
+            description="Your latest saved builds."
+            defaultOpen={false}
+            contentClassName="space-y-3"
+          >
               {data.latestCombos.length ? (
                 data.latestCombos.map((combo) => (
                   <div key={combo.id} className="flex items-center justify-between rounded-2xl border border-border px-4 py-3">
@@ -248,8 +248,7 @@ export default async function DashboardPage() {
                   No combos saved yet. Start in the combo builder.
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </CollapsibleSection>
 
           <div className="grid gap-6 xl:grid-cols-2">
             <Card>

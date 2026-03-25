@@ -6,7 +6,8 @@ import {
   updateMatchAction,
   updateTournamentAction
 } from "@/app/actions/tournaments";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { Input } from "@/components/ui/input";
 import { LocalDateTime } from "@/components/ui/local-date-time";
 import { Label } from "@/components/ui/label";
@@ -102,12 +103,10 @@ export default async function TournamentsPage({ searchParams }) {
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr,1.1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Create tournament</CardTitle>
-            <CardDescription>Create an event that the whole team can view and update.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <CollapsibleSection
+          title="Create tournament"
+          description="Create an event that the whole team can view and update."
+        >
             <form action={createTournamentAction} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Tournament name</Label>
@@ -115,15 +114,12 @@ export default async function TournamentsPage({ searchParams }) {
               </div>
               <SubmitButton pendingLabel="Creating...">Create tournament</SubmitButton>
             </form>
-          </CardContent>
-        </Card>
+        </CollapsibleSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Log match</CardTitle>
-            <CardDescription>Everyone can log or update shared tournament records using saved team combos.</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <CollapsibleSection
+          title="Log match"
+          description="Everyone can log or update shared tournament records using saved team combos."
+        >
             {combos.length === 0 || tournaments.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
                 Create at least one tournament and save at least one combo before logging matches.
@@ -218,27 +214,29 @@ export default async function TournamentsPage({ searchParams }) {
                 </div>
               </form>
             )}
-          </CardContent>
-        </Card>
+        </CollapsibleSection>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All tournaments</CardTitle>
-          <CardDescription>Shared team tournament history. Any user can update these records.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <CollapsibleSection
+        title="All tournaments"
+        description="Shared team tournament history. Any user can update these records."
+        defaultOpen={false}
+        contentClassName="space-y-4"
+      >
           {tournaments.length ? (
             tournaments.map((tournament) => (
-              <div key={tournament.id} className="rounded-2xl border border-border p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <div className="font-semibold">{tournament.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Owner: {tournament.owner.displayName} (@{tournament.owner.username}) | {tournament.matches.length} matches logged
+              <details key={tournament.id} className="rounded-2xl border border-border p-4">
+                <summary className="cursor-pointer list-none">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-semibold">{tournament.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Owner: {tournament.owner.displayName} (@{tournament.owner.username}) | {tournament.matches.length} matches logged
+                      </div>
                     </div>
+                    <span className="text-sm text-muted-foreground">Open</span>
                   </div>
-                </div>
+                </summary>
                 <details className="mt-4 rounded-xl border border-border bg-muted/30 p-3">
                   <summary className="cursor-pointer text-sm font-medium">Edit or delete tournament</summary>
                   <form action={updateTournamentAction} className="mt-4 flex flex-wrap gap-3">
@@ -272,13 +270,15 @@ export default async function TournamentsPage({ searchParams }) {
                 <div className="mt-4 space-y-3">
                   {tournament.matches.length ? (
                     tournament.matches.map((match) => (
-                      <div key={match.id} className="rounded-xl bg-muted/50 p-4">
+                      <details key={match.id} className="rounded-xl bg-muted/50 p-4">
+                        <summary className="cursor-pointer list-none">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="text-sm font-medium">
                             {match.yourCombo.name} vs {match.opponentComboName}
                           </div>
                           <LocalDateTime value={match.playedAt} className="text-xs text-muted-foreground" />
                         </div>
+                        </summary>
                         <div className="mt-2 text-sm text-muted-foreground">
                           {comboLabel(match.yourCombo)} vs {opponentComboLabel(match)}
                         </div>
@@ -394,7 +394,7 @@ export default async function TournamentsPage({ searchParams }) {
                             </div>
                           </form>
                         </details>
-                      </div>
+                      </details>
                     ))
                   ) : (
                     <div className="rounded-xl border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
@@ -402,15 +402,14 @@ export default async function TournamentsPage({ searchParams }) {
                     </div>
                   )}
                 </div>
-              </div>
+              </details>
             ))
           ) : (
             <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
               No tournaments created yet.
             </div>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleSection>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { createDeckAction, deleteDeckAction, updateDeckAction } from "@/app/actions/decks";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -62,12 +63,10 @@ export default async function DecksPage({ searchParams }) {
         </div>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Create deck</CardTitle>
-          <CardDescription>Choose 3 saved combos with no repeated blades, ratchets, or bits.</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <CollapsibleSection
+        title="Create deck"
+        description="Choose 3 saved combos with no repeated blades, ratchets, or bits."
+      >
           {combos.length < 3 ? (
             <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
               Save at least 3 combos before building a deck.
@@ -98,15 +97,14 @@ export default async function DecksPage({ searchParams }) {
               </div>
             </form>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Saved decks</CardTitle>
-          <CardDescription>Your 3-combo lineups.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 xl:grid-cols-2">
+      <CollapsibleSection
+        title="Saved decks"
+        description="Your 3-combo lineups."
+        defaultOpen={false}
+        contentClassName="grid gap-4 xl:grid-cols-2"
+      >
           {decks.length ? (
             decks.map((deck) => (
               <div key={deck.id} className="rounded-2xl border border-border p-4">
@@ -169,8 +167,7 @@ export default async function DecksPage({ searchParams }) {
               No decks saved yet.
             </div>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleSection>
     </div>
   );
 }
