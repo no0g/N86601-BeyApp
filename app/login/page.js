@@ -61,7 +61,7 @@ export default async function LoginPage({ searchParams }) {
           <div className="flex justify-end">
             <ThemeToggle />
           </div>
-          <Card className="rounded-[2rem] border-white/60 bg-white/90 shadow-2xl shadow-slate-950/10">
+          <Card className="solid-surface rounded-[2rem] border border-border shadow-2xl shadow-slate-950/10 dark:shadow-black/30">
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
             <CardDescription>Use your admin account or a user account created by the admin.</CardDescription>
@@ -70,11 +70,17 @@ export default async function LoginPage({ searchParams }) {
             <form action={loginAction} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
-                <Input id="username" name="username" required />
+                <Input id="username" name="username" required className="bg-white text-slate-950 dark:bg-slate-950/70 dark:text-slate-50" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" required />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  className="bg-white text-slate-950 dark:bg-slate-950/70 dark:text-slate-50"
+                />
               </div>
               {error ? (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
