@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComboPartsShowcase } from "@/components/ui/combo-parts-showcase";
 import { MetaRecommendations } from "@/components/features/meta-recommendations";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -77,7 +76,6 @@ function WeightPanel({ stats }) {
 }
 
 export function ComboBuilderForm({ action }) {
-  const [name, setName] = useState("");
   const [bladeId, setBladeId] = useState(beybladeData.blades[0].id);
   const [ratchetId, setRatchetId] = useState(beybladeData.ratchets[0].id);
   const [bitId, setBitId] = useState(beybladeData.bits[0].id);
@@ -88,6 +86,7 @@ export function ComboBuilderForm({ action }) {
   );
 
   const parts = [getPartById(bladeId), getPartById(ratchetId), getPartById(bitId)];
+  const generatedName = comboLabel({ bladeId, ratchetId, bitId });
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
@@ -101,15 +100,11 @@ export function ComboBuilderForm({ action }) {
         <CardContent>
           <form action={action} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Combo name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Phoenix Wing Rush"
-                required
-              />
+              <Label>Generated combo name</Label>
+              <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm font-medium">
+                {generatedName}
+              </div>
+              <input type="hidden" name="name" value={generatedName} />
             </div>
 
             <div className="space-y-2">

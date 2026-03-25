@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
-import { computeComboStats } from "@/lib/beyblade-data";
+import { comboLabel, computeComboStats } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
 import { comboSchema } from "@/lib/validators";
 
@@ -24,7 +24,11 @@ export async function createComboAction(formData) {
   }
 
   const parsed = comboSchema.safeParse({
-    name: formData.get("name"),
+    name: comboLabel({
+      bladeId: String(formData.get("bladeId") || ""),
+      ratchetId: String(formData.get("ratchetId") || ""),
+      bitId: String(formData.get("bitId") || "")
+    }),
     bladeId: formData.get("bladeId"),
     ratchetId: formData.get("ratchetId"),
     bitId: formData.get("bitId")
