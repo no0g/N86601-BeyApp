@@ -24,7 +24,7 @@ export default async function ComboPerformancePage({ searchParams }) {
   const params = await searchParams;
 
   const comboCount = await prisma.combo.count({
-    where: session.role === "ADMIN" ? {} : { ownerId: session.sub }
+    where: session.role === "ADMIN" ? { archivedAt: null } : { ownerId: session.sub, archivedAt: null }
   });
 
   if (comboCount === 0) {
@@ -45,7 +45,7 @@ export default async function ComboPerformancePage({ searchParams }) {
   const currentPage = Math.min(totalPages, requestedPage);
 
   const combos = await prisma.combo.findMany({
-    where: session.role === "ADMIN" ? {} : { ownerId: session.sub },
+    where: session.role === "ADMIN" ? { archivedAt: null } : { ownerId: session.sub, archivedAt: null },
     include: {
       owner: {
         select: {

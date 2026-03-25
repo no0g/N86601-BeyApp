@@ -32,7 +32,7 @@ export default async function DecksPage({ searchParams }) {
 
   const [combos, decks] = await Promise.all([
     prisma.combo.findMany({
-      where: { ownerId: session.sub },
+      where: { ownerId: session.sub, archivedAt: null },
       orderBy: { createdAt: "desc" }
     }),
     prisma.deck.findMany({

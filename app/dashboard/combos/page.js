@@ -1,8 +1,9 @@
-import { createComboAction, deleteComboAction, updateComboAction } from "@/app/actions/combos";
+import { createComboAction, unarchiveComboAction } from "@/app/actions/combos";
 import { ComboBuilderForm } from "@/components/features/combo-builder-form";
 import { EditableComboCard } from "@/components/features/editable-combo-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComboPartsShowcase } from "@/components/ui/combo-parts-showcase";
+import { Input } from "@/components/ui/input";
 import { requireSession } from "@/lib/auth";
 import { comboLabel, computeComboStats, getPartById } from "@/lib/beyblade-data";
 import { prisma } from "@/lib/prisma";
@@ -52,19 +53,82 @@ export default async function CombosPage({ searchParams }) {
   const params = await searchParams;
   const currentPage = Math.max(1, Number(params?.page || 1) || 1);
   const currentTeamPage = Math.max(1, Number(params?.teamPage || 1) || 1);
+  const currentArchivedPage = Math.max(1, Number(params?.archivedPage || 1) || 1);
+  const savedQuery = String(params?.q || "").trim();
+  const teamQuery = String(params?.teamQ || "").trim();
 
-  const [combos, comboCount] =
+  const savedWhere = {
+    ownerId: session.sub,
+    archivedAt: null,
+    ...(savedQuery
+      ? {
+          name: {
+            contains: savedQuery,
+            mode: "insensitive"
+          }
+        }
+      : {})
+  };
+
+  const teamWhere = {
+    ownerId: { not: session.sub },
+    archivedAt: null,
+    ...(teamQuery
+      ? {
+          OR: [
+            {
+              name: {
+                contains: teamQuery,
+                mode: "insensitive"
+              }
+            },
+            {
+              owner: {
+                displayName: {
+                  contains: teamQuery,
+                  mode: "insensitive"
+                }
+              }
+            },
+            {
+              owner: {
+                username: {
+                  contains: teamQuery,
+                  mode: "insensitive"
+                }
+              }
+            }
+          ]
+        }
+      : {})
+  };
+
+  const archivedWhere = {
+    ownerId: session.sub,
+    archivedAt: { not: null }
+  };
+
+  const [combos, comboCount, archivedCombos, archivedComboCount] =
     session.role === "ADMIN"
-      ? [[], 0]
+      ? [[], 0, [], 0]
       : await Promise.all([
           prisma.combo.findMany({
-            where: { ownerId: session.sub },
+            where: savedWhere,
             orderBy: { createdAt: "desc" },
             skip: (currentPage - 1) * PAGE_SIZE,
             take: PAGE_SIZE
           }),
           prisma.combo.count({
-            where: { ownerId: session.sub }
+            where: savedWhere
+          }),
+          prisma.combo.findMany({
+            where: archivedWhere,
+            orderBy: { archivedAt: "desc" },
+            skip: (currentArchivedPage - 1) * PAGE_SIZE,
+            take: PAGE_SIZE
+          }),
+          prisma.combo.count({
+            where: archivedWhere
           })
         ]);
 
@@ -73,9 +137,7 @@ export default async function CombosPage({ searchParams }) {
       ? [[], 0]
       : await Promise.all([
           prisma.combo.findMany({
-            where: {
-              ownerId: { not: session.sub }
-            },
+            where: teamWhere,
             include: {
               owner: {
                 select: {
@@ -89,9 +151,7 @@ export default async function CombosPage({ searchParams }) {
             take: TEAM_PAGE_SIZE
           }),
           prisma.combo.count({
-            where: {
-              ownerId: { not: session.sub }
-            }
+            where: teamWhere
           })
         ]);
 
@@ -119,17 +179,32 @@ export default async function CombosPage({ searchParams }) {
         <>
           <ComboBuilderForm action={createComboAction} />
 
-          <Card>
-            <CardHeader>
+        <Card>
+          <CardHeader>
               <CardTitle>Saved combos</CardTitle>
               <CardDescription>Every saved combo can be used in decks, training, and tournaments.</CardDescription>
-            </CardHeader>
+          </CardHeader>
             <CardContent className="space-y-4">
+              <form action="/dashboard/combos" className="flex flex-wrap gap-3">
+                <Input
+                  name="q"
+                  defaultValue={savedQuery}
+                  placeholder="Search your combos"
+                  className="min-w-[240px] flex-1"
+                />
+                {teamQuery ? <input type="hidden" name="teamQ" value={teamQuery} /> : null}
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+                >
+                  Search
+                </button>
+              </form>
               {combos.length ? (
                 combos.map((combo) => <EditableComboCard key={combo.id} combo={combo} />)
               ) : (
                 <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                  No combos saved yet.
+                  {savedQuery ? "No saved combos matched your search." : "No combos saved yet."}
                 </div>
               )}
               {comboCount > PAGE_SIZE ? (
@@ -140,7 +215,7 @@ export default async function CombosPage({ searchParams }) {
                   <div className="flex items-center gap-2">
                     {currentPage > 1 ? (
                       <a
-                        href={`/dashboard/combos?page=${currentPage - 1}`}
+                        href={`/dashboard/combos?page=${currentPage - 1}${savedQuery ? `&q=${encodeURIComponent(savedQuery)}` : ""}${teamQuery ? `&teamQ=${encodeURIComponent(teamQuery)}` : ""}${currentArchivedPage > 1 ? `&archivedPage=${currentArchivedPage}` : ""}`}
                         className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
                       >
                         Previous
@@ -152,7 +227,80 @@ export default async function CombosPage({ searchParams }) {
                     )}
                     {currentPage < Math.ceil(comboCount / PAGE_SIZE) ? (
                       <a
-                        href={`/dashboard/combos?page=${currentPage + 1}`}
+                        href={`/dashboard/combos?page=${currentPage + 1}${savedQuery ? `&q=${encodeURIComponent(savedQuery)}` : ""}${teamQuery ? `&teamQ=${encodeURIComponent(teamQuery)}` : ""}${currentArchivedPage > 1 ? `&archivedPage=${currentArchivedPage}` : ""}`}
+                        className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
+                      >
+                        Next
+                      </a>
+                    ) : (
+                      <span className="rounded-xl border border-border px-3 py-1.5 text-sm text-muted-foreground">
+                        Next
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Archived combos</CardTitle>
+              <CardDescription>Inactive combos can be restored here whenever you want to reuse them.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {archivedCombos.length ? (
+                archivedCombos.map((combo) => (
+                  <div key={combo.id} className="rounded-2xl border border-border p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold">{combo.name}</div>
+                        <div className="text-sm text-muted-foreground">{comboLabel(combo)}</div>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <div className="text-sm text-muted-foreground">
+                        Archived combo. Historical deck and match records stay intact.
+                      </div>
+                      <form action={unarchiveComboAction}>
+                        <button
+                          type="submit"
+                          name="comboId"
+                          value={combo.id}
+                          className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700"
+                        >
+                          Unarchive combo
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                  No archived combos yet.
+                </div>
+              )}
+              {archivedComboCount > PAGE_SIZE ? (
+                <div className="flex items-center justify-between rounded-2xl border border-border px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">
+                    Archived page {currentArchivedPage} of {Math.ceil(archivedComboCount / PAGE_SIZE)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {currentArchivedPage > 1 ? (
+                      <a
+                        href={`/dashboard/combos?archivedPage=${currentArchivedPage - 1}${savedQuery ? `&q=${encodeURIComponent(savedQuery)}` : ""}${teamQuery ? `&teamQ=${encodeURIComponent(teamQuery)}` : ""}${currentPage > 1 ? `&page=${currentPage}` : ""}${currentTeamPage > 1 ? `&teamPage=${currentTeamPage}` : ""}`}
+                        className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
+                      >
+                        Previous
+                      </a>
+                    ) : (
+                      <span className="rounded-xl border border-border px-3 py-1.5 text-sm text-muted-foreground">
+                        Previous
+                      </span>
+                    )}
+                    {currentArchivedPage < Math.ceil(archivedComboCount / PAGE_SIZE) ? (
+                      <a
+                        href={`/dashboard/combos?archivedPage=${currentArchivedPage + 1}${savedQuery ? `&q=${encodeURIComponent(savedQuery)}` : ""}${teamQuery ? `&teamQ=${encodeURIComponent(teamQuery)}` : ""}${currentPage > 1 ? `&page=${currentPage}` : ""}${currentTeamPage > 1 ? `&teamPage=${currentTeamPage}` : ""}`}
                         className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
                       >
                         Next
@@ -174,6 +322,21 @@ export default async function CombosPage({ searchParams }) {
               <CardDescription>Read-only view of combos created by other team members.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <form action="/dashboard/combos" className="flex flex-wrap gap-3">
+                {savedQuery ? <input type="hidden" name="q" value={savedQuery} /> : null}
+                <Input
+                  name="teamQ"
+                  defaultValue={teamQuery}
+                  placeholder="Search team combos or owner"
+                  className="min-w-[240px] flex-1"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+                >
+                  Search
+                </button>
+              </form>
               {teamCombos.length ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   {teamCombos.map((combo) => {
@@ -230,7 +393,7 @@ export default async function CombosPage({ searchParams }) {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                  No other team combos yet.
+                  {teamQuery ? "No team combos matched your search." : "No other team combos yet."}
                 </div>
               )}
               {teamComboCount > TEAM_PAGE_SIZE ? (
@@ -241,7 +404,7 @@ export default async function CombosPage({ searchParams }) {
                   <div className="flex items-center gap-2">
                     {currentTeamPage > 1 ? (
                       <a
-                        href={`/dashboard/combos?page=${currentPage}&teamPage=${currentTeamPage - 1}`}
+                        href={`/dashboard/combos?page=${currentPage}&teamPage=${currentTeamPage - 1}${savedQuery ? `&q=${encodeURIComponent(savedQuery)}` : ""}${teamQuery ? `&teamQ=${encodeURIComponent(teamQuery)}` : ""}`}
                         className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
                       >
                         Previous
@@ -253,7 +416,7 @@ export default async function CombosPage({ searchParams }) {
                     )}
                     {currentTeamPage < Math.ceil(teamComboCount / TEAM_PAGE_SIZE) ? (
                       <a
-                        href={`/dashboard/combos?page=${currentPage}&teamPage=${currentTeamPage + 1}`}
+                        href={`/dashboard/combos?page=${currentPage}&teamPage=${currentTeamPage + 1}${savedQuery ? `&q=${encodeURIComponent(savedQuery)}` : ""}${teamQuery ? `&teamQ=${encodeURIComponent(teamQuery)}` : ""}`}
                         className="rounded-xl border border-border px-3 py-1.5 text-sm hover:bg-muted"
                       >
                         Next

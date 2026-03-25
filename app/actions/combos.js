@@ -88,7 +88,8 @@ export async function updateComboAction(formData) {
   const combo = await prisma.combo.findFirst({
     where: {
       id: comboId,
-      ownerId: session.sub
+      ownerId: session.sub,
+      archivedAt: null
     },
     include: {
       deckSlots: true,
@@ -164,13 +165,8 @@ export async function deleteComboAction(formData) {
   const combo = await prisma.combo.findFirst({
     where: {
       id: comboId,
-      ownerId: session.sub
-    },
-    include: {
-      deckSlots: true,
-      yourMatches: true,
-      trainingYourMatches: true,
-      trainingOpponentMatches: true
+      ownerId: session.sub,
+      archivedAt: null
     }
   });
 
@@ -178,18 +174,47 @@ export async function deleteComboAction(formData) {
     redirect("/dashboard/combos?error=Combo%20not%20found");
   }
 
-  if (
-    combo.deckSlots.length > 0 ||
-    combo.yourMatches.length > 0 ||
-    combo.trainingYourMatches.length > 0 ||
-    combo.trainingOpponentMatches.length > 0
-  ) {
-    redirect("/dashboard/combos?error=Cannot%20delete%20a%20combo%20that%20is%20already%20used%20in%20a%20deck%20or%20match");
-  }
-
-  await prisma.combo.delete({
-    where: { id: comboId }
+  await prisma.combo.update({
+    where: { id: comboId },
+    data: {
+      archivedAt: new Date()
+    }
   });
 
-  redirect("/dashboard/combos?success=Combo%20deleted");
+  redirect("/dashboard/combos?success=Combo%20archived");
+}
+
+export async function unarchiveComboAction(formData) {
+  const session = await requireSession();
+
+  if (session.role === "ADMIN") {
+    redirect("/dashboard/combos?error=Hardcoded%20admin%20account%20is%20for%20management%20and%20reporting");
+  }
+
+  const comboId = String(formData.get("comboId") || "");
+
+  if (!comboId) {
+    redirect("/dashboard/combos?error=Combo%20not%20found");
+  }
+
+  const combo = await prisma.combo.findFirst({
+    where: {
+      id: comboId,
+      ownerId: session.sub,
+      archivedAt: { not: null }
+    }
+  });
+
+  if (!combo) {
+    redirect("/dashboard/combos?error=Archived%20combo%20not%20found");
+  }
+
+  await prisma.combo.update({
+    where: { id: comboId },
+    data: {
+      archivedAt: null
+    }
+  });
+
+  redirect("/dashboard/combos?success=Combo%20unarchived");
 }

@@ -22,7 +22,7 @@ async function getUserOverview(session) {
   if (session.role === "ADMIN") {
     const [users, combos, decks, trainingSessions, tournaments, matches, trainingMatches] = await Promise.all([
       prisma.user.count(),
-      prisma.combo.count(),
+      prisma.combo.count({ where: { archivedAt: null } }),
       prisma.deck.count(),
       prisma.trainingSession.count(),
       prisma.tournament.count(),
@@ -40,13 +40,13 @@ async function getUserOverview(session) {
 
   const [comboCount, deckCount, trainingCount, tournamentCount, matchCount, latestCombos, matches, trainingMatches] =
     await Promise.all([
-    prisma.combo.count({ where: { ownerId: session.sub } }),
+    prisma.combo.count({ where: { ownerId: session.sub, archivedAt: null } }),
     prisma.deck.count({ where: { ownerId: session.sub } }),
     prisma.trainingSession.count(),
     prisma.tournament.count(),
     prisma.match.count(),
     prisma.combo.findMany({
-      where: { ownerId: session.sub },
+      where: { ownerId: session.sub, archivedAt: null },
       orderBy: { createdAt: "desc" },
       take: 5
     }),

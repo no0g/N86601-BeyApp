@@ -13,6 +13,7 @@ async function validateDeckInput(ownerId, deckName, comboIds, ignoreDeckId) {
   const combos = await prisma.combo.findMany({
     where: {
       ownerId,
+      archivedAt: null,
       id: { in: comboIds }
     }
   });

@@ -67,7 +67,7 @@ export default async function AdminPage({ searchParams }) {
     }),
     Promise.all([
       prisma.user.count(),
-      prisma.combo.count(),
+      prisma.combo.count({ where: { archivedAt: null } }),
       prisma.deck.count(),
       prisma.trainingSession.count(),
       prisma.tournament.count(),

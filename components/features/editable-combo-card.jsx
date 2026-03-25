@@ -208,9 +208,9 @@ export function EditableComboCard({ combo }) {
                 formAction={deleteComboAction}
                 name="comboId"
                 value={combo.id}
-                className="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
+                className="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700"
               >
-                Delete combo
+                Archive combo
               </button>
             </div>
           </form>

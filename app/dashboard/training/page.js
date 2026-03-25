@@ -40,6 +40,9 @@ export default async function TrainingPage({ searchParams }) {
 
   const [teamCombos, trainingSessions] = await Promise.all([
     prisma.combo.findMany({
+      where: {
+        archivedAt: null
+      },
       include: {
         owner: {
           select: {
