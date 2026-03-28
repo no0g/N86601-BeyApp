@@ -203,6 +203,7 @@ export default async function DashboardPage() {
                 <Link href="/dashboard/training">Open training</Link>
                 <Link href="/dashboard/tournaments">Open tournaments</Link>
                 <Link href="/dashboard/performance">Open performance</Link>
+                <Link href="/dashboard/simulator">Open simulator</Link>
               </div>
           </CollapsibleSection>
         </>
