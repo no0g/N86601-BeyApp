@@ -21,6 +21,8 @@ model User {
   decks               Deck[]
   tournaments         Tournament[]
   trainingSessions    TrainingSession[]
+  localTournamentParticipants LocalTournamentParticipant[]
+  localTournamentsOwned LocalTournament[]
 }
 
 model Combo {
@@ -122,6 +124,62 @@ model TrainingMatch {
   opponentCombo     Combo           @relation("TrainingOpponentCombo", fields: [opponentComboId], references: [id])
 }
 
+model LocalTournament {
+  id              String                     @id @default(cuid())
+  name            String
+  qualifierFormat LocalQualifierFormat
+  swissRounds     Int?
+  topCutSize      Int
+  status          LocalTournamentStatus      @default(SETUP)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  ownerId         String
+  owner           User                       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  participants    LocalTournamentParticipant[]
+  matches         LocalTournamentMatch[]
+
+  @@unique([ownerId, name])
+}
+
+model LocalTournamentParticipant {
+  id               String          @id @default(cuid())
+  tournamentId     String
+  userId           String
+  seed             Int?
+  qualified        Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  tournament       LocalTournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchesAsA       LocalTournamentMatch[] @relation("LocalMatchPlayerA")
+  matchesAsB       LocalTournamentMatch[] @relation("LocalMatchPlayerB")
+  wonMatches       LocalTournamentMatch[] @relation("LocalMatchWinner")
+
+  @@unique([tournamentId, userId])
+}
+
+model LocalTournamentMatch {
+  id            String                   @id @default(cuid())
+  tournamentId  String
+  stage         LocalTournamentStage
+  roundNumber   Int
+  tableNumber   Int
+  playerAId     String?
+  playerBId     String?
+  winnerId      String?
+  result        LocalMatchResult?
+  status        LocalMatchStatus         @default(PENDING)
+  scoreA        Int                      @default(0)
+  scoreB        Int                      @default(0)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  tournament    LocalTournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  playerA       LocalTournamentParticipant? @relation("LocalMatchPlayerA", fields: [playerAId], references: [id])
+  playerB       LocalTournamentParticipant? @relation("LocalMatchPlayerB", fields: [playerBId], references: [id])
+  winner        LocalTournamentParticipant? @relation("LocalMatchWinner", fields: [winnerId], references: [id])
+
+  @@unique([tournamentId, stage, roundNumber, tableNumber])
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -138,4 +196,35 @@ enum FinishType {
   BURST
   OVER
   SPIN
+}
+
+enum LocalQualifierFormat {
+  ROUND_ROBIN
+  SWISS
+}
+
+enum LocalTournamentStatus {
+  SETUP
+  QUALIFIER
+  ELIMINATION
+  COMPLETED
+}
+
+enum LocalTournamentStage {
+  QUALIFIER
+  UPPER
+  LOWER
+  GRAND_FINAL
+}
+
+enum LocalMatchResult {
+  A_WIN
+  B_WIN
+  DRAW
+}
+
+enum LocalMatchStatus {
+  PENDING
+  COMPLETED
+  BYE
 }

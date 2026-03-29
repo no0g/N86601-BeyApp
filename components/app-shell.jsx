@@ -14,6 +14,7 @@ import {
   Dumbbell,
   LineChart,
   Crosshair,
+  Flag,
   Menu,
   X
 } from "lucide-react";
@@ -29,6 +30,7 @@ const baseLinks = [
   { href: "/dashboard/tournaments", label: "Tournaments", icon: Trophy },
   { href: "/dashboard/performance", label: "Performance", icon: LineChart },
   { href: "/dashboard/simulator", label: "Simulator", icon: Crosshair },
+  { href: "/dashboard/local-tournaments", label: "Local Tournament", icon: Flag },
   { href: "/dashboard/settings", label: "Settings", icon: KeyRound }
 ];
 
